@@ -260,7 +260,24 @@ public class ProductoService {
 
     public void actualizarSoloPrecio(Long id, Double nuevoPrecio, String usuario) {
         Producto producto = obtenerPorId(id);
+        Double precioAnterior = producto.getPrecio();
+        
+        // Registrar en historial de precios
         registrarCambioPrecio(producto, nuevoPrecio, usuario);
+        
+        // Crear notificación de cambio de precio
+        Double diferencia = nuevoPrecio - precioAnterior;
+        Double porcentaje = (diferencia / precioAnterior) * 100;
+        String direccion = diferencia > 0 ? "incrementó" : "disminuyó";
+        String emoji = diferencia > 0 ? "📈" : "📉";
+        
+        String descripcion = String.format(
+            "%s Precio %s de S/ %.2f a S/ %.2f (%.1f%%)",
+            emoji, direccion, precioAnterior, nuevoPrecio, Math.abs(porcentaje)
+        );
+        
+        notificacionService.notificarCambioPrecio(producto, precioAnterior, nuevoPrecio, descripcion, usuario);
+        
         producto.setPrecio(nuevoPrecio);
         producto.setFechaActualizacion(LocalDateTime.now());
         productoRepository.save(producto);

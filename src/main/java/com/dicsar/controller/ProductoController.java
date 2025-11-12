@@ -4,9 +4,11 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import com.dicsar.dto.ProductoDTO;
+import com.dicsar.dto.ProductoResponseDTO;
 import com.dicsar.dto.ResultadoProductoDTO;
 import com.dicsar.entity.HistorialPrecio;
 import com.dicsar.entity.Producto;
@@ -26,8 +28,35 @@ public class ProductoController {
     private final HistorialPrecioService historialPrecioService;
 
     @GetMapping
-    public List<Producto> listar() {
-        return productoService.listar();
+    @Transactional(readOnly = true)
+    public List<ProductoResponseDTO> listar() {
+        return productoService.listar().stream()
+            .map(this::convertirAResponseDTO)
+            .toList();
+    }
+    
+    private ProductoResponseDTO convertirAResponseDTO(Producto p) {
+        return ProductoResponseDTO.builder()
+            .idProducto(p.getIdProducto())
+            .nombre(p.getNombre())
+            .codigo(p.getCodigo())
+            .descripcion(p.getDescripcion())
+            .precioBase(p.getPrecio())
+            .stockActual(p.getStockActual())
+            .stockMinimo(p.getStockMinimo())
+            .estado(p.getEstado())
+            .fechaVencimiento(p.getFechaVencimiento())
+            .estadoVencimiento(p.getEstadoVencimiento())
+            .fechaCreacion(p.getFechaCreacion())
+            .fechaActualizacion(p.getFechaActualizacion())
+            .categoriaId(p.getCategoria() != null ? p.getCategoria().getIdCategoria() : null)
+            .categoriaNombre(p.getCategoria() != null ? p.getCategoria().getNombre() : null)
+            .unidadMedidaId(p.getUnidadMedida() != null ? p.getUnidadMedida().getIdUnidadMed() : null)
+            .unidadMedidaNombre(p.getUnidadMedida() != null ? p.getUnidadMedida().getNombre() : null)
+            .unidadMedidaAbreviatura(p.getUnidadMedida() != null ? p.getUnidadMedida().getAbreviatura() : null)
+            .proveedorId(p.getProveedor() != null ? p.getProveedor().getIdProveedor() : null)
+            .proveedorNombre(p.getProveedor() != null ? p.getProveedor().getRazonSocial() : null)
+            .build();
     }
 
     @PostMapping
