@@ -108,6 +108,23 @@ public class NotificacionService {
         return n;
     }
 
+    // 🔹 Notificación de cambio de precio
+    public Notificacion notificarCambioPrecio(Producto producto, Double precioAnterior, Double precioNuevo, String descripcion, String usuario) {
+        Notificacion n = Notificacion.builder()
+                .titulo("Cambio de precio")
+                .mensaje("El precio del producto " + producto.getNombre() + " cambió de S/ " + String.format("%.2f", precioAnterior) + " a S/ " + String.format("%.2f", precioNuevo))
+                .tipo(TipoAlerta.PRECIO)
+                .nivel(NivelAlerta.INFORMATIVA)
+                .descripcion(descripcion)
+                .usuario(usuario)
+                .fechaHora(LocalDateTime.now())
+                .producto(producto)
+                .build();
+
+        notificacionRepository.save(n);
+        return n;
+    }
+
     // 🔹 Método para generar alertas por vencimiento
     public List<Notificacion> generarAlertasPorVencimiento(Producto producto, String usuario) {
         List<Notificacion> alertas = new ArrayList<>();
