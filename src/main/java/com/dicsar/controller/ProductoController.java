@@ -1,106 +1,130 @@
 package com.dicsar.controller;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
 
+import com.dicsar.dto.ProductoDTO;
+import com.dicsar.dto.ProductoResponseDTO;
+import com.dicsar.dto.ResultadoProductoDTO;
+import com.dicsar.entity.HistorialPrecio;
 import com.dicsar.entity.Producto;
+import com.dicsar.enums.EstadoVencimiento;
+import com.dicsar.service.HistorialPrecioService;
 import com.dicsar.service.ProductoService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("api/productos")
+@RequiredArgsConstructor
 public class ProductoController {
-	
-	private final ProductoService productoService;
 
-    public ProductoController(ProductoService productoService) {
-        this.productoService = productoService;
-    }
+    private final ProductoService productoService;
+    private final HistorialPrecioService historialPrecioService;
+
     @GetMapping
-    public List<Producto> listar() {
-        return productoService.listar();
+    @Transactional(readOnly = true)
+    public List<ProductoResponseDTO> listar() {
+        return productoService.listar().stream()
+            .map(this::convertirAResponseDTO)
+            .toList();
+    }
+    
+    private ProductoResponseDTO convertirAResponseDTO(Producto p) {
+        return ProductoResponseDTO.builder()
+            .idProducto(p.getIdProducto())
+            .nombre(p.getNombre())
+            .codigo(p.getCodigo())
+            .descripcion(p.getDescripcion())
+            .precioBase(p.getPrecio())
+            .stockActual(p.getStockActual())
+            .stockMinimo(p.getStockMinimo())
+            .estado(p.getEstado())
+            .fechaVencimiento(p.getFechaVencimiento())
+            .estadoVencimiento(p.getEstadoVencimiento())
+            .fechaCreacion(p.getFechaCreacion())
+            .fechaActualizacion(p.getFechaActualizacion())
+            .categoriaId(p.getCategoria() != null ? p.getCategoria().getIdCategoria() : null)
+            .categoriaNombre(p.getCategoria() != null ? p.getCategoria().getNombre() : null)
+            .unidadMedidaId(p.getUnidadMedida() != null ? p.getUnidadMedida().getIdUnidadMed() : null)
+            .unidadMedidaNombre(p.getUnidadMedida() != null ? p.getUnidadMedida().getNombre() : null)
+            .unidadMedidaAbreviatura(p.getUnidadMedida() != null ? p.getUnidadMedida().getAbreviatura() : null)
+            .proveedorId(p.getProveedor() != null ? p.getProveedor().getIdProveedor() : null)
+            .proveedorNombre(p.getProveedor() != null ? p.getProveedor().getRazonSocial() : null)
+            .build();
     }
 
     @PostMapping
-    public Producto crear(@RequestBody Producto producto) {
-        return productoService.guardar(producto);
+    public ResponseEntity<ResultadoProductoDTO> crear(@Valid @RequestBody ProductoDTO dto) {
+    	ResultadoProductoDTO resultado = productoService.guardar(dto, "admin");
+        return ResponseEntity.status(HttpStatus.CREATED).body(resultado);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Producto> actualizar(@PathVariable Long id, @RequestBody Producto producto) {
-    	return productoService.obtener(id)
-                .map(p -> {
-                    p.setNombre(producto.getNombre());
-                    p.setDescripcion(producto.getDescripcion());
-                    p.setPrecio(producto.getPrecio());
-                    p.setStock(producto.getStock());
-                    p.setFechaVencimiento(producto.getFechaVencimiento());
-                    return ResponseEntity.ok(productoService.guardar(p));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<ResultadoProductoDTO> actualizar(@PathVariable Long id,
+                                                           @Valid @RequestBody ProductoDTO dto) {
+        ResultadoProductoDTO resultado = productoService.actualizar(id, dto, "admin");
+        return ResponseEntity.ok(resultado);
     }
     
-    @PutMapping("/{id}/estado")
-    public ResponseEntity<?> cambiarEstado(@PathVariable Long id, @RequestParam boolean nuevoEstado) {
-        Optional<Producto> productoOpt = productoService.getOne(id);
-
-        if (!productoOpt.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Producto no encontrado");
-        }
-
-        Producto producto = productoOpt.get();
-
-        // Regla 1: no desactivar si stock > 0
-        if (!nuevoEstado && producto.getStock() > 0) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("No se puede inactivar un producto con stock disponible");
-        }
-
-        // Regla 2: no activar si ya está vencido
-        if (nuevoEstado && producto.getFechaVencimiento() != null &&
-                producto.getFechaVencimiento().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("No se puede activar un producto vencido");
-        }
-
-        producto.setEstado(nuevoEstado);
-        producto.setFechaActualizacion(LocalDateTime.now());
-        productoService.guardar(producto);
-
-        return ResponseEntity.ok("Estado actualizado correctamente");
+    @PatchMapping("/{id}/precio")
+    public ResponseEntity<String> actualizarPrecio(@PathVariable Long id,
+                                                   @RequestParam Double nuevoPrecio,
+                                                   @RequestParam String usuario) {
+        productoService.actualizarSoloPrecio(id, nuevoPrecio, usuario);
+        return ResponseEntity.ok("Precio actualizado correctamente");
+    }
+    
+    @PatchMapping("/{id}/estado")
+    public ResponseEntity<String> actualizarEstado(@PathVariable Long id,
+                                                   @RequestParam boolean nuevoEstado,
+                                                   @RequestParam String usuario) {
+        productoService.actualizarSoloEstado(id, nuevoEstado, usuario);
+        return ResponseEntity.ok("Estado del producto actualizado correctamente");
     }
 
-
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        Optional<Producto> productoOpt = productoService.getOne(id);
-
-        if (!productoOpt.isPresent()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Producto no encontrado");
-        }
-
-        Producto producto = productoOpt.get();
-
-        // Regla de negocio: no eliminar si el producto está activo
-        if (Boolean.TRUE.equals(producto.getEstado())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("No se puede eliminar un producto activo. Primero cámbielo a inactivo.");
-        }
-
-        productoService.eliminar(id);
+    public ResponseEntity<String> eliminar(@PathVariable Long id) {
+        productoService.eliminarConRegla(id);
         return ResponseEntity.ok("Producto eliminado correctamente");
+    }
+    
+    @GetMapping("/{id}/historial-precios")
+    public ResponseEntity<List<HistorialPrecio>> obtenerHistorialPrecios(@PathVariable Long id) {
+        List<HistorialPrecio> historial = historialPrecioService.obtenerHistorialPorProducto(id);
+        return historial.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(historial);
+    }
+    
+    @GetMapping("/stock")
+    public ResponseEntity<List<Producto>> filtrarStock(
+            @RequestParam(required = false) Long categoriaId,
+            @RequestParam(required = false) Long proveedorId,
+            @RequestParam(required = false) EstadoVencimiento estadoVencimiento,
+            @RequestParam(required = false) Integer stockMin,
+            @RequestParam(required = false) Integer stockMax) {
+
+        // Validación de filtros vacíos
+        if (categoriaId == null && proveedorId == null && estadoVencimiento == null
+                && stockMin == null && stockMax == null) {
+            throw new IllegalArgumentException(
+                "Debe especificar al menos un parámetro de filtrado (categoría, proveedor, estado de vencimiento o rango de stock)."
+            );
+        }
+
+        List<Producto> productos = productoService.filtrarStock(
+                categoriaId, proveedorId, estadoVencimiento, stockMin, stockMax);
+
+        // Devolver 204 si no hay resultados
+        if (productos.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.ok(productos);
     }
 
 }

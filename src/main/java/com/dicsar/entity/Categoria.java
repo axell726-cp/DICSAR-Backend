@@ -1,7 +1,11 @@
 package com.dicsar.entity;
 
 import java.time.LocalDateTime;
+
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -38,5 +42,6 @@ public class Categoria {
     private LocalDateTime fechaActualizacion = LocalDateTime.now();
 
     @OneToMany(mappedBy = "categoria", cascade = CascadeType.ALL)
+    @JsonIgnore 
     private List<Producto> productos;
 }
