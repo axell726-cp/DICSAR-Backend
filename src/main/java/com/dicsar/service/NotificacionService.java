@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -30,18 +32,19 @@ public class NotificacionService {
 
     // 🔹 Verificar si ya existe una notificación activa
     public boolean existeNotificacionActiva(Long productoId, TipoAlerta tipo) {
-        if (productoId == null) return false;
+        if (productoId == null)
+            return false;
         return notificacionRepository.existsByProductoIdProductoAndTipo(productoId, tipo);
     }
 
     // 🔹 Guardar notificación genérica
     public void notificarEvento(Producto producto,
-                                TipoAlerta tipo,
-                                NivelAlerta nivel,
-                                String titulo,
-                                String mensaje,
-                                String descripcion,
-                                String usuario) {
+            TipoAlerta tipo,
+            NivelAlerta nivel,
+            String titulo,
+            String mensaje,
+            String descripcion,
+            String usuario) {
 
         Notificacion n = Notificacion.builder()
                 .titulo(titulo)
@@ -109,10 +112,12 @@ public class NotificacionService {
     }
 
     // 🔹 Notificación de cambio de precio
-    public Notificacion notificarCambioPrecio(Producto producto, Double precioAnterior, Double precioNuevo, String descripcion, String usuario) {
+    public Notificacion notificarCambioPrecio(Producto producto, Double precioAnterior, Double precioNuevo,
+            String descripcion, String usuario) {
         Notificacion n = Notificacion.builder()
                 .titulo("Cambio de precio")
-                .mensaje("El precio del producto " + producto.getNombre() + " cambió de S/ " + String.format("%.2f", precioAnterior) + " a S/ " + String.format("%.2f", precioNuevo))
+                .mensaje("El precio del producto " + producto.getNombre() + " cambió de S/ "
+                        + String.format("%.2f", precioAnterior) + " a S/ " + String.format("%.2f", precioNuevo))
                 .tipo(TipoAlerta.PRECIO)
                 .nivel(NivelAlerta.INFORMATIVA)
                 .descripcion(descripcion)
@@ -150,10 +155,42 @@ public class NotificacionService {
         return notificacionRepository.findAll();
     }
 
+    // 🔹 Listar notificaciones paginadas
+    public Page<Notificacion> listarPaginadas(Pageable pageable) {
+        return notificacionRepository.findAll(pageable);
+    }
+
+    // 🔹 Listar notificaciones no leídas
+    public List<Notificacion> listarNoLeidas() {
+        return notificacionRepository.findByLeidoFalse();
+    }
+
+    // 🔹 Listar por tipo
+    public List<Notificacion> listarPorTipo(TipoAlerta tipo) {
+        return notificacionRepository.findByTipo(tipo);
+    }
+
     // 🔹 Listar por producto
     public List<Notificacion> listarPorProducto(Long idProducto) {
         Producto p = productoRepository.findById(idProducto).orElseThrow();
         return notificacionRepository.findByProducto(p);
+    }
+
+    // 🔹 Marcar como leída
+    public Notificacion marcarComoLeida(Long id) {
+        Notificacion notificacion = notificacionRepository.findById(id).orElse(null);
+        if (notificacion != null) {
+            notificacion.setLeido(true);
+            notificacionRepository.save(notificacion);
+        }
+        return notificacion;
+    }
+
+    // 🔹 Marcar todas como leídas
+    public void marcarTodasComoLeidas() {
+        List<Notificacion> notificaciones = notificacionRepository.findByLeidoFalse();
+        notificaciones.forEach(n -> n.setLeido(true));
+        notificacionRepository.saveAll(notificaciones);
     }
 
     // 🔹 Mapear entidades a DTO
@@ -175,6 +212,19 @@ public class NotificacionService {
         notificacionRepository.save(notificacion);
     }
 
+    // 🔹 Eliminar notificación por ID
+    public void eliminar(Long id) {
+        if (!notificacionRepository.existsById(id)) {
+            throw new EntityNotFoundException("No se encontró la notificación con ID: " + id);
+        }
+        notificacionRepository.deleteById(id);
+    }
+
+    // 🔹 Eliminar todas las notificaciones
+    public void eliminarTodas() {
+        notificacionRepository.deleteAll();
+    }
+
     // 🔹 Revisión automática diaria de vencimientos (2:00 AM)
     @Scheduled(cron = "0 0 2 * * *")
     public void revisarVencimientosAutomaticamente() {
@@ -186,14 +236,6 @@ public class NotificacionService {
             }
         }
         System.out.println("✅ Revisión automática de vencimientos ejecutada: " + LocalDate.now());
-    }
-    
- // 🔹 Eliminar notificación por ID
-    public void eliminar(Long id) {
-        if (!notificacionRepository.existsById(id)) {
-            throw new EntityNotFoundException("No se encontró la notificación con ID: " + id);
-        }
-        notificacionRepository.deleteById(id);
     }
 
 }

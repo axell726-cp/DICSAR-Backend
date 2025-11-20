@@ -11,7 +11,8 @@ import com.dicsar.entity.UnidadMed;
 import com.dicsar.service.UnidadMedService;
 
 @RestController
-@RequestMapping("api/unidades-medida")
+@RequestMapping("/api/unidades-medida")
+@CrossOrigin(origins = { "http://localhost:4200", "http://localhost:5173" })
 public class UnidadMedController {
 
     private final UnidadMedService unidadMedService;

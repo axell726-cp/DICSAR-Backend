@@ -61,7 +61,7 @@ public class ProductoService {
     }
 
     // 🔹 Guardar producto nuevo
- // 🔹 Guardar producto nuevo
+    // 🔹 Guardar producto nuevo
     public ResultadoProductoDTO guardar(ProductoDTO dto, String usuario) {
         productoValidator.validar(dto);
         productoValidator.validarStock(dto);
@@ -87,7 +87,6 @@ public class ProductoService {
 
         return new ResultadoProductoDTO(producto, alertas);
     }
-
 
     // 🔹 Actualizar producto existente
     public ResultadoProductoDTO actualizar(Long id, ProductoDTO dto, String usuario) {
@@ -120,7 +119,8 @@ public class ProductoService {
 
         // Registrar movimiento si cambió el stock
         if (!Objects.equals(anterior.getStockActual(), producto.getStockActual())) {
-            movimientoService.registrarMovimiento(producto, anterior.getStockActual(), producto.getStockActual(), usuario);
+            movimientoService.registrarMovimiento(producto, anterior.getStockActual(), producto.getStockActual(),
+                    usuario);
         }
         // Evaluar reglas y alertas
         List<Notificacion> alertas = reglaPrecioService.evaluarCambios(anterior, producto, usuario);
@@ -226,13 +226,11 @@ public class ProductoService {
                         notificacionService.notificarVencimientoProximo(
                                 producto,
                                 ChronoUnit.DAYS.between(LocalDate.now(), producto.getFechaVencimiento()),
-                                usuario
-                        )
-                );
+                                usuario));
                 case VENCIDO -> alertas.add(
-                        notificacionService.notificarVencimientoExpirado(producto, usuario)
-                );
-                default -> {}
+                        notificacionService.notificarVencimientoExpirado(producto, usuario));
+                default -> {
+                }
             }
         }
 
@@ -244,6 +242,7 @@ public class ProductoService {
 
         return alertas;
     }
+
     public List<Producto> filtrarStock(Long categoriaId, Long proveedorId, EstadoVencimiento estadoVencimiento,
             Integer stockMin, Integer stockMax) {
         List<Producto> productos = productoRepository.filtrarStock(
@@ -261,33 +260,40 @@ public class ProductoService {
     public void actualizarSoloPrecio(Long id, Double nuevoPrecio, String usuario) {
         Producto producto = obtenerPorId(id);
         Double precioAnterior = producto.getPrecio();
-        
+
         // Registrar en historial de precios
         registrarCambioPrecio(producto, nuevoPrecio, usuario);
-        
+
         // Crear notificación de cambio de precio
         Double diferencia = nuevoPrecio - precioAnterior;
         Double porcentaje = (diferencia / precioAnterior) * 100;
         String direccion = diferencia > 0 ? "incrementó" : "disminuyó";
         String emoji = diferencia > 0 ? "📈" : "📉";
-        
+
         String descripcion = String.format(
-            "%s Precio %s de S/ %.2f a S/ %.2f (%.1f%%)",
-            emoji, direccion, precioAnterior, nuevoPrecio, Math.abs(porcentaje)
-        );
-        
+                "%s Precio %s de S/ %.2f a S/ %.2f (%.1f%%)",
+                emoji, direccion, precioAnterior, nuevoPrecio, Math.abs(porcentaje));
+
         notificacionService.notificarCambioPrecio(producto, precioAnterior, nuevoPrecio, descripcion, usuario);
-        
+
         producto.setPrecio(nuevoPrecio);
         producto.setFechaActualizacion(LocalDateTime.now());
         productoRepository.save(producto);
     }
-    
+
     public void actualizarSoloEstado(Long id, boolean nuevoEstado, String usuario) {
         Producto producto = obtenerPorId(id);
         producto.setEstado(nuevoEstado);
         producto.setFechaActualizacion(LocalDateTime.now());
         productoRepository.save(producto);
+    }
+
+    public long countProductos() {
+        return productoRepository.countProductos();
+    }
+
+    public long countProductosAgotados() {
+        return productoRepository.countProductosAgotados();
     }
 
 }

@@ -15,12 +15,14 @@ import com.dicsar.entity.Producto;
 import com.dicsar.enums.EstadoVencimiento;
 import com.dicsar.service.HistorialPrecioService;
 import com.dicsar.service.ProductoService;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("api/productos")
+@RequestMapping("/api/productos")
+@CrossOrigin(origins = { "http://localhost:4200", "http://localhost:5173" })
 @RequiredArgsConstructor
 public class ProductoController {
 
@@ -28,62 +30,63 @@ public class ProductoController {
     private final HistorialPrecioService historialPrecioService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
     @Transactional(readOnly = true)
     public List<ProductoResponseDTO> listar() {
         return productoService.listar().stream()
-            .map(this::convertirAResponseDTO)
-            .toList();
+                .map(this::convertirAResponseDTO)
+                .toList();
     }
-    
+
     private ProductoResponseDTO convertirAResponseDTO(Producto p) {
         return ProductoResponseDTO.builder()
-            .idProducto(p.getIdProducto())
-            .nombre(p.getNombre())
-            .codigo(p.getCodigo())
-            .descripcion(p.getDescripcion())
-            .precioBase(p.getPrecio())
-            .stockActual(p.getStockActual())
-            .stockMinimo(p.getStockMinimo())
-            .estado(p.getEstado())
-            .fechaVencimiento(p.getFechaVencimiento())
-            .estadoVencimiento(p.getEstadoVencimiento())
-            .fechaCreacion(p.getFechaCreacion())
-            .fechaActualizacion(p.getFechaActualizacion())
-            .categoriaId(p.getCategoria() != null ? p.getCategoria().getIdCategoria() : null)
-            .categoriaNombre(p.getCategoria() != null ? p.getCategoria().getNombre() : null)
-            .unidadMedidaId(p.getUnidadMedida() != null ? p.getUnidadMedida().getIdUnidadMed() : null)
-            .unidadMedidaNombre(p.getUnidadMedida() != null ? p.getUnidadMedida().getNombre() : null)
-            .unidadMedidaAbreviatura(p.getUnidadMedida() != null ? p.getUnidadMedida().getAbreviatura() : null)
-            .proveedorId(p.getProveedor() != null ? p.getProveedor().getIdProveedor() : null)
-            .proveedorNombre(p.getProveedor() != null ? p.getProveedor().getRazonSocial() : null)
-            .build();
+                .idProducto(p.getIdProducto())
+                .nombre(p.getNombre())
+                .codigo(p.getCodigo())
+                .descripcion(p.getDescripcion())
+                .precioBase(p.getPrecio())
+                .stockActual(p.getStockActual())
+                .stockMinimo(p.getStockMinimo())
+                .estado(p.getEstado())
+                .fechaVencimiento(p.getFechaVencimiento())
+                .estadoVencimiento(p.getEstadoVencimiento())
+                .fechaCreacion(p.getFechaCreacion())
+                .fechaActualizacion(p.getFechaActualizacion())
+                .categoriaId(p.getCategoria() != null ? p.getCategoria().getIdCategoria() : null)
+                .categoriaNombre(p.getCategoria() != null ? p.getCategoria().getNombre() : null)
+                .unidadMedidaId(p.getUnidadMedida() != null ? p.getUnidadMedida().getIdUnidadMed() : null)
+                .unidadMedidaNombre(p.getUnidadMedida() != null ? p.getUnidadMedida().getNombre() : null)
+                .unidadMedidaAbreviatura(p.getUnidadMedida() != null ? p.getUnidadMedida().getAbreviatura() : null)
+                .proveedorId(p.getProveedor() != null ? p.getProveedor().getIdProveedor() : null)
+                .proveedorNombre(p.getProveedor() != null ? p.getProveedor().getRazonSocial() : null)
+                .build();
     }
 
     @PostMapping
     public ResponseEntity<ResultadoProductoDTO> crear(@Valid @RequestBody ProductoDTO dto) {
-    	ResultadoProductoDTO resultado = productoService.guardar(dto, "admin");
+        ResultadoProductoDTO resultado = productoService.guardar(dto, "admin");
         return ResponseEntity.status(HttpStatus.CREATED).body(resultado);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ResultadoProductoDTO> actualizar(@PathVariable Long id,
-                                                           @Valid @RequestBody ProductoDTO dto) {
+            @Valid @RequestBody ProductoDTO dto) {
         ResultadoProductoDTO resultado = productoService.actualizar(id, dto, "admin");
         return ResponseEntity.ok(resultado);
     }
-    
+
     @PatchMapping("/{id}/precio")
     public ResponseEntity<String> actualizarPrecio(@PathVariable Long id,
-                                                   @RequestParam Double nuevoPrecio,
-                                                   @RequestParam String usuario) {
+            @RequestParam Double nuevoPrecio,
+            @RequestParam String usuario) {
         productoService.actualizarSoloPrecio(id, nuevoPrecio, usuario);
         return ResponseEntity.ok("Precio actualizado correctamente");
     }
-    
+
     @PatchMapping("/{id}/estado")
     public ResponseEntity<String> actualizarEstado(@PathVariable Long id,
-                                                   @RequestParam boolean nuevoEstado,
-                                                   @RequestParam String usuario) {
+            @RequestParam boolean nuevoEstado,
+            @RequestParam String usuario) {
         productoService.actualizarSoloEstado(id, nuevoEstado, usuario);
         return ResponseEntity.ok("Estado del producto actualizado correctamente");
     }
@@ -93,13 +96,13 @@ public class ProductoController {
         productoService.eliminarConRegla(id);
         return ResponseEntity.ok("Producto eliminado correctamente");
     }
-    
+
     @GetMapping("/{id}/historial-precios")
     public ResponseEntity<List<HistorialPrecio>> obtenerHistorialPrecios(@PathVariable Long id) {
         List<HistorialPrecio> historial = historialPrecioService.obtenerHistorialPorProducto(id);
         return historial.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(historial);
     }
-    
+
     @GetMapping("/stock")
     public ResponseEntity<List<Producto>> filtrarStock(
             @RequestParam(required = false) Long categoriaId,
@@ -112,8 +115,7 @@ public class ProductoController {
         if (categoriaId == null && proveedorId == null && estadoVencimiento == null
                 && stockMin == null && stockMax == null) {
             throw new IllegalArgumentException(
-                "Debe especificar al menos un parámetro de filtrado (categoría, proveedor, estado de vencimiento o rango de stock)."
-            );
+                    "Debe especificar al menos un parámetro de filtrado (categoría, proveedor, estado de vencimiento o rango de stock).");
         }
 
         List<Producto> productos = productoService.filtrarStock(
