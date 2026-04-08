@@ -17,6 +17,7 @@ import com.dicsar.entity.Notificacion;
 import com.dicsar.entity.Producto;
 import com.dicsar.entity.Proveedor;
 import com.dicsar.entity.UnidadMed;
+import com.dicsar.entity.Usuario;
 import com.dicsar.enums.EstadoVencimiento;
 import com.dicsar.enums.TipoAlerta;
 import com.dicsar.repository.CategoriaRepository;
@@ -42,6 +43,7 @@ public class ProductoService {
     private final ProductoValidator productoValidator;
     private final NotificacionService notificacionService;
     private final MovimientoService movimientoService;
+    private final UsuarioService usuarioService;
 
     // 🔹 Listar todos los productos
     public List<Producto> listar() {
@@ -99,7 +101,8 @@ public class ProductoService {
         Producto anterior = producto.copiaLigera();
 
         // Registrar cambio de precio
-        registrarCambioPrecio(producto, dto.getPrecioBase(), usuario);
+        Usuario usuarioObj = usuarioService.buscarPorUsername(usuario);
+        registrarCambioPrecio(producto, dto.getPrecioBase(), usuarioObj);
 
         // Actualizar datos del producto
         producto.setNombre(dto.getNombre());
@@ -193,13 +196,14 @@ public class ProductoService {
     }
 
     private void validarFechaVencimiento(LocalDate fechaVencimiento) {
-        if (fechaVencimiento == null || !fechaVencimiento.isAfter(LocalDate.now())) {
+        if (fechaVencimiento == null) return;
+        if (!fechaVencimiento.isAfter(LocalDate.now())) {
             throw new RuntimeException("La fecha de vencimiento no puede ser menor o igual a la fecha actual.");
         }
     }
 
     // 🔹 Registrar histórico de precios
-    private void registrarCambioPrecio(Producto producto, Double nuevoPrecio, String usuario) {
+    private void registrarCambioPrecio(Producto producto, Double nuevoPrecio, Usuario usuario) {
         if (!Objects.equals(producto.getPrecio(), nuevoPrecio)) {
             HistorialPrecio registro = HistorialPrecio.builder()
                     .producto(producto)
@@ -261,9 +265,10 @@ public class ProductoService {
     public void actualizarSoloPrecio(Long id, Double nuevoPrecio, String usuario) {
         Producto producto = obtenerPorId(id);
         Double precioAnterior = producto.getPrecio();
+        Usuario usuarioObj = usuarioService.buscarPorUsername(usuario);
         
         // Registrar en historial de precios
-        registrarCambioPrecio(producto, nuevoPrecio, usuario);
+        registrarCambioPrecio(producto, nuevoPrecio, usuarioObj);
         
         // Crear notificación de cambio de precio
         Double diferencia = nuevoPrecio - precioAnterior;

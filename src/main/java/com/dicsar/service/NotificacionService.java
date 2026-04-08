@@ -64,7 +64,7 @@ public class NotificacionService {
                 .mensaje("El producto " + producto.getNombre() + " vencerá en " + dias + " días.")
                 .tipo(TipoAlerta.ALERTA_VENCIMIENTO)
                 .nivel(NivelAlerta.ADVERTENCIA)
-                .descripcion("Producto dentro de los próximos 30 días de vencimiento.")
+                .descripcion("Producto dentro de los próximos 14 días de vencimiento.")
                 .usuario(usuario)
                 .fechaHora(LocalDateTime.now())
                 .producto(producto)
@@ -137,7 +137,7 @@ public class NotificacionService {
 
             if (diasRestantes < 0) {
                 alertas.add(notificarVencimientoExpirado(producto, usuario));
-            } else if (diasRestantes <= 10) {
+            } else if (diasRestantes <= 14) {
                 alertas.add(notificarVencimientoProximo(producto, diasRestantes, usuario));
             }
         }

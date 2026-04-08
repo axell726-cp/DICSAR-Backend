@@ -30,10 +30,15 @@ public class HistorialPrecio {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idHistorial;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_producto", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Producto producto;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_usuario", nullable = true)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Usuario usuario;
 
     @Column(nullable = false)
     private Double precioAnterior;
@@ -43,6 +48,4 @@ public class HistorialPrecio {
 
     @Builder.Default
     private LocalDateTime fechaCambio = LocalDateTime.now();
-
-    private String usuario; 
 }

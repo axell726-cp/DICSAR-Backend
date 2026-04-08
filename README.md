@@ -1,58 +1,188 @@
-# 📦 DICSAR Backend — Gestión de Inventario, Proveedores y Clientes
+# DICSAR Backend - Sistema de Gestion de Inventario
 
-Este repositorio contiene el backend del sistema de gestión de inventario, precios y stock de **DICSAR S.A.C.**, desarrollado en **Spring Boot** con arquitectura **MVC en capas**.
+## Descripcion
 
----
+API REST del sistema de gestion de inventario para **DICSAR S.A.C.**, desarrollado en **Spring Boot** con arquitectura **MVC en capas**.
 
-## 🚀 Objetivo del Proyecto
-Construir un sistema modular para la administración de inventarios, precios, proveedores, clientes y seguridad de usuarios.  
+### Objetivos del Proyecto
 
-- **Sprint 1:** Inventario y precios (productos, categorías, stock, vencimientos y notificaciones).  
-- **Sprint 2:** Proveedores y adquisiciones (módulo de compras, historial y movimientos de inventario).  
-- **Sprint 3:** Clientes y seguridad (módulo de clientes, usuarios, roles y control de acceso).  
-
----
-
-## 🌱 Arquitectura y Tecnologías
-- **Backend:** Spring Boot 3 + JPA/Hibernate + Maven  
-- **Base de datos:** MySQL  
-- **IDE recomendado:** Spring Tools Suite / IntelliJ 
-- **Conexión DB:** `application.properties` ya definido para evitar conflictos  
-- **Control de versiones:** Git + GitHub  
-- **Metodología:** Scrum (con historias de usuario, sprints y tareas definidas en Jira)  
+- **Sprint 1:** Inventario y precios (productos, categorias, stock, vencimientos y notificaciones).
+- **Sprint 2:** Proveedores y adquisiciones (modulo de compras, historial y movimientos de inventario).
+- **Sprint 3:** Clientes y seguridad (modulo de clientes, usuarios, roles y control de acceso).
 
 ---
 
-## 🌳 Flujo de ramas (Git Flow Adaptado)
+## Tecnologia
 
-Para mantener orden, seguimos este esquema de ramas:
-
-- **`master`** → Rama oficial, estable y validada al final de cada sprint.  
-- **`develop-sprintX`** → Rama de integración de cada sprint (ej: `develop-sprint1`).  
-- **`feature/HU#-descripcion`** → Ramas de desarrollo por Historia de Usuario (ej: `feature/HU3-modificar-estados`).  
-
-> 💡 Nota: **No trabajar en `master` directamente.** Cada dev trabaja en su rama `feature` y luego hace merge a `develop-sprintX` cuando esté probado.
+| Componente | Tecnologia |
+|------------|------------|
+| Framework | Spring Boot 3.5.6 |
+| Lenguaje | Java 17 |
+| Base de datos | MySQL 8.0 |
+| ORM | Spring Data JPA / Hibernate |
+| Seguridad | Spring Security + JWT |
+| Build | Maven |
 
 ---
 
-## 🛠️ Guía de uso (Comandos principales)
+## Arquitectura
 
-1. **Clonar el repositorio**
-   ```bash
-   git clone https://github.com/axell726-cp/DICSAR---Backend.git
-   cd DICSAR---Backend
-2. **Listar ramas disponibles**
-   ```bash
-   git branch -a
-3. **Cambiar a la HU que se va a trabajar**
-   ```bash
-   git checkout feature/HU3-modificar-estados
-   git pull origin feature/HU3-modificar-estados
-4. **Subir tus cambios**
-   ```bash
-   git add .
-   git commit -m "HU3: implementar endpoint para modificar estado de producto" (:ejemplo)
-   git push origin feature/HU3-modificar-estados
-5. **verificar remoto (cambios realizados)**
-   ```bash
-   git remote -v
+```
+com.dicsar/
+├── Application.java          # Punto de entrada
+├── config/                   # Configuracion inicial
+├── controller/               # Controladores REST
+│   ├── AuthController.java   # Autenticacion
+│   ├── ProductoController.java
+│   ├── ProveedorController.java
+│   ├── ClienteController.java
+│   ├── MovimientoController.java
+│   ├── ReporteController.java
+│   ├── ReporteVentaController.java
+│   ├── CategoriaController.java
+│   ├── UnidadMedController.java
+│   ├── NotificacionController.java
+│   └── HistorialPrecioController.java
+├── service/                  # Logica de negocio
+├── repository/               # Repositorios JPA
+├── entity/                   # Entidades
+│   ├── Usuario.java
+│   ├── Producto.java
+│   ├── Proveedor.java
+│   ├── Cliente.java
+│   ├── Movimiento.java
+│   ├── Categoria.java
+│   ├── UnidadMed.java
+│   ├── Notificacion.java
+│   ├── HistorialPrecio.java
+│   ├── ReporteVenta.java
+│   └── ...
+├── dto/                      # Objetos de transferencia
+├── security/                 # JWT y seguridad
+│   ├── SecurityConfig.java
+│   ├── JwtUtil.java
+│   ├── JwtRequestFilter.java
+│   └── CustomUserDetailsService.java
+├── exceptions/               # Manejo de errores
+├── enums/                    # Enumeraciones
+│   ├── TipoMovimiento.java
+│   ├── TipoRegla.java
+│   ├── TipoAlerta.java
+│   ├── NivelAlerta.java
+│   └── EstadoVencimiento.java
+├── validator/               # Validadores
+└── corsconfig/              # Configuracion CORS
+```
+
+---
+
+## Entidades del Modelo de Datos
+
+| Entidad | Descripcion |
+|---------|-------------|
+| **Usuario** | Usuarios del sistema con roles (Admin, Empleado) |
+| **Producto** | Articulos con precios, stock, categoria, fecha de vencimiento |
+| **Proveedor** | Proveedores con validacion de RUC |
+| **Cliente** | Clientes para ventas |
+| **Movimiento** | Entradas y salidas de inventario |
+| **Categoria** | Categorias de productos |
+| **UnidadMed** | Unidades de medida (kg, unid, L, etc.) |
+| **Notificacion** | Alertas del sistema |
+| **HistorialPrecio** | Registro historico de cambios de precios |
+| **ReporteVenta** | Registro de ventas realizadas |
+
+---
+
+## Caracteristicas
+
+- **Autenticacion JWT** con control de roles (Administrador, Empleado)
+- **Gestion de productos** - CRUD completo con validaciones
+- **Control de inventario** - Movimientos de entrada/salida
+- **Gestion de proveedores** - Registro con validacion de RUC
+- **Gestion de clientes** - Base de datos de clientes
+- **Reportes** - Inventario, ventas, proveedores
+- **Alertas** - Notificaciones de productos proximos a vencer
+- **Historial de precios** - Seguimiento de cambios de precio
+- **Validadores personalizados** - RUC, productos, reglas de precio
+
+---
+
+## Configuracion
+
+### Base de Datos (application.properties)
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/dicsar
+spring.datasource.username=root
+spring.datasource.password=root
+spring.jpa.hibernate.ddl-auto=update
+```
+
+### Puerto
+
+La API corre en `http://localhost:8080`
+
+---
+
+## Guia de Uso
+
+### Requisitos Previos
+
+- Java 17
+- Maven 3.8+
+- MySQL 8.0
+
+### Ejecutar el Proyecto
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/axell726-cp/DICSAR---Backend.git
+cd DICSAR---Backend
+
+# Compilar y ejecutar
+mvn spring-boot:run
+```
+
+### Endpoints Principales
+
+| Metodo | Endpoint | Descripcion |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Iniciar sesion |
+| GET | `/api/productos` | Listar productos |
+| POST | `/api/productos` | Crear producto |
+| PUT | `/api/productos/{id}` | Actualizar producto |
+| DELETE | `/api/productos/{id}` | Eliminar producto |
+| GET | `/api/proveedores` | Listar proveedores |
+| POST | `/api/proveedores` | Crear proveedor |
+| GET | `/api/clientes` | Listar clientes |
+| POST | `/api/movimientos` | Registrar movimiento |
+| GET | `/api/reportes/inventario` | Reporte de inventario |
+| GET | `/api/reportes/ventas` | Reporte de ventas |
+
+---
+
+## Flujo de Ramas (Git Flow)
+
+- **`master`** - Rama estable oficial
+- **`develop-sprintX`** - Rama de integracion por sprint
+- **`feature/HU#-descripcion`** - Rama por Historia de Usuario
+
+> No trabajar directamente en master. Hacer merge desde feature a develop-sprintX.
+
+---
+
+## Presentacion para GitHub
+
+Este proyecto forma parte del sistema **DICSAR** - Gestion de Inventario para DICSAR S.A.C.
+
+**Tecnologias utilizadas:**
+- Spring Boot 3.5.6
+- MySQL
+- JWT Authentication
+- Angular (Frontend separado)
+
+**Usuario de prueba:**
+- Usuario: `admin`
+- Contrasena: `admin123`
+
+---

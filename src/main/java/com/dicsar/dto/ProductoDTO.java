@@ -50,7 +50,6 @@ public class ProductoDTO {
     private Double precioCompra;
 
    
-    @NotNull(message = "La fecha de vencimiento es obligatoria")
     private LocalDate fechaVencimiento;
 
 

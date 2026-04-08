@@ -121,6 +121,11 @@ public class UsuarioService {
         usuarioRepository.delete(usuario);
     }
     
+    public Usuario buscarPorUsername(String username) {
+        return usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + username));
+    }
+    
     @Transactional
     public void cambiarPassword(String passwordActual, String passwordNueva) {
         // Obtener el usuario actual desde el contexto de seguridad
