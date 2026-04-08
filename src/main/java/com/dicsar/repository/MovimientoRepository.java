@@ -1,5 +1,6 @@
 package com.dicsar.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -7,9 +8,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.dicsar.entity.Movimiento;
 import com.dicsar.enums.TipoMovimiento;
 
-public interface MovimientoRepository extends JpaRepository<Movimiento, Long>{
-	
-	 List<Movimiento> findByProductoIdProductoOrderByFechaMovimientoDesc(Long idProducto);
+public interface MovimientoRepository extends JpaRepository<Movimiento, Long> {
 
-	 List<Movimiento> findByTipoMovimiento(TipoMovimiento tipoMovimiento);
+	List<Movimiento> findByProductoIdProductoOrderByFechaMovimientoDesc(Long idProducto);
+
+	List<Movimiento> findByTipoMovimiento(TipoMovimiento tipoMovimiento);
+
+	List<Movimiento> findByFechaMovimientoBetween(LocalDateTime inicio, LocalDateTime fin);
 }

@@ -27,31 +27,35 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Table(name = "notificacion")
 public class Notificacion {
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-	private String titulo;
-	
-	@Column(length = 500)
-	private String mensaje;
-	
+    private String titulo;
+
+    @Column(length = 500)
+    private String mensaje;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "id_producto")
     private Producto producto;
 
     @Enumerated(EnumType.STRING)
     private TipoAlerta tipo;
-    
+
     @Enumerated(EnumType.STRING)
     private NivelAlerta nivel;
 
     @Column(nullable = false, length = 300)
     private String descripcion;
-    
+
     @Column(nullable = false, length = 100)
     private String usuario;
 
     @Builder.Default
     private LocalDateTime fechaHora = LocalDateTime.now();
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean leido = false;
 }

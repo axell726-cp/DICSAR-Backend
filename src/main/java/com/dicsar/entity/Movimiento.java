@@ -28,14 +28,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class Movimiento {
-	
-	@Id
+
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idMovimiento;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_producto", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Producto producto;
 
     @Enumerated(EnumType.STRING)
@@ -57,4 +57,7 @@ public class Movimiento {
 
     @Column(nullable = false)
     private LocalDateTime fechaMovimiento;
+
+    // 🆕 Campo de precio según tipo de movimiento
+    private Double precio;
 }

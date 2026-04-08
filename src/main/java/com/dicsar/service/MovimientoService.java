@@ -3,7 +3,10 @@ package com.dicsar.service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -55,14 +58,24 @@ public class MovimientoService {
 		int cantidad = movimiento.getCantidad();
 
 		switch (movimiento.getTipoMovimiento()) {
-		case ENTRADA -> producto.setStockActual(stockActual + cantidad);
-		case SALIDA -> {
-			if (stockActual < cantidad) {
-				throw new IllegalArgumentException("Stock insuficiente para realizar la salida.");
+			case ENTRADA -> {
+				producto.setStockActual(stockActual + cantidad);
+				// ENTRADA: precio viene del proveedor (precio_compra)
+				movimiento.setPrecio(producto.getPrecioCompra() != null ? producto.getPrecioCompra() : 0.0);
 			}
-			producto.setStockActual(stockActual - cantidad);
-		}
-		case AJUSTE -> producto.setStockActual(cantidad);
+			case SALIDA -> {
+				if (stockActual < cantidad) {
+					throw new IllegalArgumentException("Stock insuficiente para realizar la salida.");
+				}
+				producto.setStockActual(stockActual - cantidad);
+				// SALIDA: precio viene de venta (precio)
+				movimiento.setPrecio(producto.getPrecio() != null ? producto.getPrecio() : 0.0);
+			}
+			case AJUSTE -> {
+				producto.setStockActual(cantidad);
+				// AJUSTE: precio del costo actual del inventario
+				movimiento.setPrecio(producto.getPrecio() != null ? producto.getPrecio() : 0.0);
+			}
 		}
 
 		producto.setFechaActualizacion(LocalDateTime.now());
@@ -74,12 +87,25 @@ public class MovimientoService {
 		return movimientoRepository.findAll(Sort.by(Sort.Direction.DESC, "fechaMovimiento"));
 	}
 
+	public Page<Movimiento> listarPaginados(Pageable pageable) {
+		return movimientoRepository.findAll(pageable);
+	}
+
 	public List<Movimiento> listarPorProducto(Long idProducto) {
 		return movimientoRepository.findByProductoIdProductoOrderByFechaMovimientoDesc(idProducto);
 	}
 
 	public List<Movimiento> listarPorTipo(TipoMovimiento tipo) {
-	    return movimientoRepository.findByTipoMovimiento(tipo);
+		return movimientoRepository.findByTipoMovimiento(tipo);
+	}
+
+	public List<Movimiento> listarPorRangoFechas(LocalDateTime inicio, LocalDateTime fin) {
+		return movimientoRepository.findByFechaMovimientoBetween(inicio, fin);
+	}
+
+	public Movimiento obtenerPorId(Long id) {
+		Optional<Movimiento> mov = movimientoRepository.findById(id);
+		return mov.orElse(null);
 	}
 
 }

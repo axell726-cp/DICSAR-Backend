@@ -21,7 +21,8 @@ import com.dicsar.service.ProveedorService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("api/proveedores")
+@RequestMapping("/api/proveedores")
+@CrossOrigin(origins = { "http://localhost:4200", "http://localhost:5173" })
 public class ProveedorController {
 
     private final ProveedorService proveedorService;
@@ -45,10 +46,10 @@ public class ProveedorController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "razonSocial") String sortBy,
             @RequestParam(defaultValue = "ASC") String direction) {
-        
+
         Sort.Direction sortDirection = direction.equalsIgnoreCase("DESC") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
-        
+
         return proveedorService.listarPaginado(buscar, estado, pageable);
     }
 
@@ -57,7 +58,7 @@ public class ProveedorController {
             @RequestParam(required = false) String buscar,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("razonSocial").ascending());
         return proveedorService.buscarProveedoresActivos(buscar, pageable);
     }
@@ -75,35 +76,35 @@ public class ProveedorController {
             @RequestParam(required = false) String nombre,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Pageable pageable = PageRequest.of(page, size, Sort.by("nombre").ascending());
         Page<Producto> productosPage = productoRepository.buscarProductosPorProveedor(id, nombre, pageable);
-        
+
         return productosPage.map(this::convertirAResponseDTO);
     }
-    
+
     private ProductoResponseDTO convertirAResponseDTO(Producto p) {
         return ProductoResponseDTO.builder()
-            .idProducto(p.getIdProducto())
-            .nombre(p.getNombre())
-            .codigo(p.getCodigo())
-            .descripcion(p.getDescripcion())
-            .precioBase(p.getPrecio())
-            .stockActual(p.getStockActual())
-            .stockMinimo(p.getStockMinimo())
-            .estado(p.getEstado())
-            .fechaVencimiento(p.getFechaVencimiento())
-            .estadoVencimiento(p.getEstadoVencimiento())
-            .fechaCreacion(p.getFechaCreacion())
-            .fechaActualizacion(p.getFechaActualizacion())
-            .categoriaId(p.getCategoria() != null ? p.getCategoria().getIdCategoria() : null)
-            .categoriaNombre(p.getCategoria() != null ? p.getCategoria().getNombre() : null)
-            .unidadMedidaId(p.getUnidadMedida() != null ? p.getUnidadMedida().getIdUnidadMed() : null)
-            .unidadMedidaNombre(p.getUnidadMedida() != null ? p.getUnidadMedida().getNombre() : null)
-            .unidadMedidaAbreviatura(p.getUnidadMedida() != null ? p.getUnidadMedida().getAbreviatura() : null)
-            .proveedorId(p.getProveedor() != null ? p.getProveedor().getIdProveedor() : null)
-            .proveedorNombre(p.getProveedor() != null ? p.getProveedor().getRazonSocial() : null)
-            .build();
+                .idProducto(p.getIdProducto())
+                .nombre(p.getNombre())
+                .codigo(p.getCodigo())
+                .descripcion(p.getDescripcion())
+                .precioBase(p.getPrecio())
+                .stockActual(p.getStockActual())
+                .stockMinimo(p.getStockMinimo())
+                .estado(p.getEstado())
+                .fechaVencimiento(p.getFechaVencimiento())
+                .estadoVencimiento(p.getEstadoVencimiento())
+                .fechaCreacion(p.getFechaCreacion())
+                .fechaActualizacion(p.getFechaActualizacion())
+                .categoriaId(p.getCategoria() != null ? p.getCategoria().getIdCategoria() : null)
+                .categoriaNombre(p.getCategoria() != null ? p.getCategoria().getNombre() : null)
+                .unidadMedidaId(p.getUnidadMedida() != null ? p.getUnidadMedida().getIdUnidadMed() : null)
+                .unidadMedidaNombre(p.getUnidadMedida() != null ? p.getUnidadMedida().getNombre() : null)
+                .unidadMedidaAbreviatura(p.getUnidadMedida() != null ? p.getUnidadMedida().getAbreviatura() : null)
+                .proveedorId(p.getProveedor() != null ? p.getProveedor().getIdProveedor() : null)
+                .proveedorNombre(p.getProveedor() != null ? p.getProveedor().getRazonSocial() : null)
+                .build();
     }
 
     @PostMapping
