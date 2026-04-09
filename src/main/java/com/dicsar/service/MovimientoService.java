@@ -51,7 +51,7 @@ public class MovimientoService {
 	}
 
 	@Transactional
-	public Movimiento crearMovimiento(Movimiento movimiento, String usuario) {
+	public Movimiento crearMovimiento(Movimiento movimiento) {
 		Producto producto = movimiento.getProducto();
 		int stockActual = producto.getStockActual();
 		int cantidad = movimiento.getCantidad();

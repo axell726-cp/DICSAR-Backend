@@ -12,6 +12,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,7 +46,9 @@ public class MovimientoController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
     public ResponseEntity<Movimiento> crearMovimiento(@RequestBody Movimiento movimiento,
-            @RequestParam String usuario) {
+            Authentication authentication) {
+        String usuario = authentication.getName();
+
         // Validar que el producto exista
         Producto producto = productoService.obtenerPorId(movimiento.getProducto().getIdProducto());
         movimiento.setProducto(producto);
@@ -55,7 +58,7 @@ public class MovimientoController {
         movimiento.setUsuario(usuarioEntity);
 
         // Registrar el movimiento
-        Movimiento nuevoMovimiento = movimientoService.crearMovimiento(movimiento, usuario);
+        Movimiento nuevoMovimiento = movimientoService.crearMovimiento(movimiento);
 
         // Verificar si el stock quedó bajo y crear notificación
         productoService.verificarYCrearNotificacionStock(producto.getIdProducto(), usuario);
