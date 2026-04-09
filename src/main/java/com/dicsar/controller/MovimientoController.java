@@ -23,9 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.dicsar.entity.Movimiento;
 import com.dicsar.entity.Producto;
+import com.dicsar.entity.Usuario;
 import com.dicsar.enums.TipoMovimiento;
 import com.dicsar.service.MovimientoService;
 import com.dicsar.service.ProductoService;
+import com.dicsar.service.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,6 +39,7 @@ public class MovimientoController {
 
     private final MovimientoService movimientoService;
     private final ProductoService productoService;
+    private final UsuarioService usuarioService;
 
     // Registrar un nuevo movimiento
     @PostMapping
@@ -47,9 +50,16 @@ public class MovimientoController {
         Producto producto = productoService.obtenerPorId(movimiento.getProducto().getIdProducto());
         movimiento.setProducto(producto);
 
+        // Buscar el usuario y asociarlo como entidad
+        Usuario usuarioEntity = usuarioService.buscarPorUsername(usuario);
+        movimiento.setUsuario(usuarioEntity);
+
         // Registrar el movimiento
-        movimiento.setUsuarioMovimiento(usuario);
         Movimiento nuevoMovimiento = movimientoService.crearMovimiento(movimiento, usuario);
+
+        // Verificar si el stock quedó bajo y crear notificación
+        productoService.verificarYCrearNotificacionStock(producto.getIdProducto(), usuario);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevoMovimiento);
     }
 

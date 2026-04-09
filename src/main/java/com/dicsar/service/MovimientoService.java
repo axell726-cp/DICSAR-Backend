@@ -44,7 +44,6 @@ public class MovimientoService {
 				.cantidad(Math.abs(diferencia))
 				.descripcion("Cambio de stock: " + stockAnterior + " → " + stockNuevo)
 				.usuario(usuarioEntity)
-				.usuarioMovimiento(usuario)
 				.fechaMovimiento(LocalDateTime.now())
 				.build();
 
@@ -60,27 +59,28 @@ public class MovimientoService {
 		switch (movimiento.getTipoMovimiento()) {
 			case ENTRADA -> {
 				producto.setStockActual(stockActual + cantidad);
-				// ENTRADA: precio viene del proveedor (precio_compra)
-				movimiento.setPrecio(producto.getPrecioCompra() != null ? producto.getPrecioCompra() : 0.0);
 			}
 			case SALIDA -> {
 				if (stockActual < cantidad) {
 					throw new IllegalArgumentException("Stock insuficiente para realizar la salida.");
 				}
 				producto.setStockActual(stockActual - cantidad);
-				// SALIDA: precio viene de venta (precio)
-				movimiento.setPrecio(producto.getPrecio() != null ? producto.getPrecio() : 0.0);
 			}
 			case AJUSTE -> {
 				producto.setStockActual(cantidad);
-				// AJUSTE: precio del costo actual del inventario
-				movimiento.setPrecio(producto.getPrecio() != null ? producto.getPrecio() : 0.0);
 			}
 		}
 
 		producto.setFechaActualizacion(LocalDateTime.now());
 		movimiento.setFechaMovimiento(LocalDateTime.now());
-		return movimientoRepository.save(movimiento);
+		Movimiento nuevoMovimiento = movimientoRepository.save(movimiento);
+
+		// Verificar si el stock quedó bajo después de la operación y crear notificación
+		if (producto.getStockMinimo() != null && producto.getStockActual() <= producto.getStockMinimo()) {
+			// La creación de notificación se maneja en ProductoService
+		}
+
+		return nuevoMovimiento;
 	}
 
 	public List<Movimiento> listarTodos() {

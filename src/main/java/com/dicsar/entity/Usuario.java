@@ -34,9 +34,9 @@ public class Usuario {
     @Column(nullable = false, length = 100)
     private String nombreCompleto;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "rol_id", nullable = false)
-    private RolEntity rol;
+    @NotBlank(message = "El rol es obligatorio")
+    @Column(nullable = false, length = 20)
+    private String rol;
 
     @Column(nullable = false)
     private Boolean activo = true;

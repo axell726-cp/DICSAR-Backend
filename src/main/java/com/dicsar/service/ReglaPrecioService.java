@@ -84,6 +84,7 @@ public class ReglaPrecioService {
 
         String titulo = switch (nivel) {
             case CRITICA -> "Alerta crítica de precios";
+            case MEDIA -> "Alerta media de precios";
             case ADVERTENCIA -> "Advertencia de precios";
             case INFORMATIVA -> "Notificación informativa";
         };

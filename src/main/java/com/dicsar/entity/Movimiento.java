@@ -52,12 +52,6 @@ public class Movimiento {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Usuario usuario;
 
-    @Column(name = "usuario_movimiento", nullable = true)
-    private String usuarioMovimiento;
-
     @Column(nullable = false)
     private LocalDateTime fechaMovimiento;
-
-    // 🆕 Campo de precio según tipo de movimiento
-    private Double precio;
 }

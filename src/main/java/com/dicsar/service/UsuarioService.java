@@ -3,10 +3,8 @@ package com.dicsar.service;
 import com.dicsar.dto.AuthResponse;
 import com.dicsar.dto.LoginRequest;
 import com.dicsar.dto.UsuarioDTO;
-import com.dicsar.entity.RolEntity;
 import com.dicsar.entity.Usuario;
 import com.dicsar.repository.UsuarioRepository;
-import com.dicsar.repository.RolRepository;
 import com.dicsar.security.JwtUtil;
 import com.dicsar.exceptions.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +26,6 @@ public class UsuarioService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
-
-    @Autowired
-    private RolRepository rolRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -57,7 +52,7 @@ public class UsuarioService {
             throw new ResourceNotFoundException("El usuario no tiene un rol asignado");
         }
 
-        String rolNombre = usuario.getRol().getNombre();
+        String rolNombre = usuario.getRol();
         final String jwt = jwtUtil.generateToken(userDetails, rolNombre);
 
         return new AuthResponse(jwt, usuario.getUsername(), usuario.getNombreCompleto(), rolNombre);
@@ -75,11 +70,7 @@ public class UsuarioService {
         usuario.setNombreCompleto(usuarioDTO.getNombreCompleto());
 
         // Si no se especifica rol, asignar VENDEDOR por defecto
-        RolEntity rol = usuarioDTO.getRol();
-        if (rol == null) {
-            rol = rolRepository.findByNombre("VENDEDOR")
-                    .orElseThrow(() -> new ResourceNotFoundException("Rol VENDEDOR no encontrado"));
-        }
+        String rol = usuarioDTO.getRol() != null ? usuarioDTO.getRol() : "VENDEDOR";
         usuario.setRol(rol);
         usuario.setActivo(usuarioDTO.getActivo() != null ? usuarioDTO.getActivo() : true);
 
@@ -142,6 +133,24 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         usuarioRepository.delete(usuario);
+    }
+
+    @Transactional
+    public UsuarioDTO desactivarUsuario(Integer id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        usuario.setActivo(false);
+        Usuario updated = usuarioRepository.save(usuario);
+        return convertToDTO(updated);
+    }
+
+    @Transactional
+    public UsuarioDTO activarUsuario(Integer id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        usuario.setActivo(true);
+        Usuario updated = usuarioRepository.save(usuario);
+        return convertToDTO(updated);
     }
     
     public Usuario buscarPorUsername(String username) {
