@@ -1,6 +1,5 @@
 package com.dicsar.dto;
 
-import com.dicsar.entity.RolEntity;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -24,6 +23,6 @@ public class UsuarioDTO {
     @Size(max = 100)
     private String nombreCompleto;
 
-    private RolEntity rol;
+    private String rol;
     private Boolean activo;
 }

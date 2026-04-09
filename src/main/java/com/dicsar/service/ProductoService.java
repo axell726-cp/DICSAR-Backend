@@ -301,4 +301,18 @@ public class ProductoService {
         return productoRepository.countProductosAgotados();
     }
 
+    public void verificarYCrearNotificacionStock(Long productoId, String usuario) {
+        Producto producto = obtenerPorId(productoId);
+        if (producto == null) return;
+
+        // Verificar si el stock está bajo
+        if (producto.getStockActual() != null && producto.getStockMinimo() != null
+                && producto.getStockActual() <= producto.getStockMinimo()) {
+            // Verificar si ya existe una notificación activa
+            if (!notificacionService.existeNotificacionActiva(productoId, TipoAlerta.STOCK_BAJO)) {
+                notificacionService.notificarStockMinimo(producto, usuario);
+            }
+        }
+    }
+
 }

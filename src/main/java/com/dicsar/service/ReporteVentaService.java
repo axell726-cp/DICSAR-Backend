@@ -69,7 +69,6 @@ public class ReporteVentaService {
         movimiento.setCantidad(venta.getCantidad());
         movimiento.setDescripcion("Venta a cliente " + venta.getCliente().getNombre()
                 + " - " + venta.getTipoDocumento() + " #" + nuevaVenta.getIdVenta());
-        movimiento.setUsuarioMovimiento("sistema"); // O could get from security context
         movimiento.setFechaMovimiento(LocalDateTime.now());
         movimientoRepository.save(movimiento);
 

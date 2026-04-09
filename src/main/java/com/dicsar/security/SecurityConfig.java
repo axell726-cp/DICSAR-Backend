@@ -48,7 +48,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 
                 // Endpoints solo para ADMIN
-                .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/usuarios/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/usuarios/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/usuarios/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/reportes/**").hasRole("ADMIN")
                 
                 // Endpoints para ADMIN y VENDEDOR (productos y movimientos)

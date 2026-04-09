@@ -2,6 +2,8 @@ package com.dicsar.config;
 
 import com.dicsar.entity.*;
 import com.dicsar.enums.EstadoVencimiento;
+import com.dicsar.enums.NivelAlerta;
+import com.dicsar.enums.TipoAlerta;
 import com.dicsar.enums.TipoMovimiento;
 import com.dicsar.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +40,8 @@ public class DataInitializer implements CommandLineRunner {
     private MovimientoRepository movimientoRepository;
     @Autowired
     private ReporteVentaRepository reporteVentaRepository;
+    @Autowired
+    private NotificacionRepository notificacionRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -93,35 +97,25 @@ public class DataInitializer implements CommandLineRunner {
 
     // 2️⃣ USUARIOS
     private void crearUsuarios() {
-        try {
-            RolEntity adminRole = rolRepository.findByNombre("ADMIN")
-                    .orElseThrow(() -> new RuntimeException("Rol ADMIN no encontrado"));
-            RolEntity vendedorRole = rolRepository.findByNombre("VENDEDOR")
-                    .orElseThrow(() -> new RuntimeException("Rol VENDEDOR no encontrado"));
+        // Crear o actualizar usuario ADMIN - SIEMPRE ACTIVO
+        Usuario admin = usuarioRepository.findByUsername("admin").orElse(new Usuario());
+        admin.setUsername("admin");
+        admin.setPassword(passwordEncoder.encode("admin123"));
+        admin.setNombreCompleto("Administrador del Sistema");
+        admin.setRol("ADMIN");
+        admin.setActivo(true);
+        usuarioRepository.save(admin);
+        System.out.println("✅ Usuario ADMIN: admin/admin123 (activo=true)");
 
-            // Crear o actualizar usuario ADMIN - SIEMPRE ACTIVO
-            Usuario admin = usuarioRepository.findByUsername("admin").orElse(new Usuario());
-            admin.setUsername("admin");
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setNombreCompleto("Administrador del Sistema");
-            admin.setRol(adminRole);
-            admin.setActivo(true); // ✅ SIEMPRE ACTIVO
-            usuarioRepository.save(admin);
-            System.out.println("✅ Usuario ADMIN: admin/admin123 (activo=true)");
-
-            // Crear o actualizar usuario VENDEDOR - SIEMPRE ACTIVO
-            Usuario vendedor = usuarioRepository.findByUsername("vendedor").orElse(new Usuario());
-            vendedor.setUsername("vendedor");
-            vendedor.setPassword(passwordEncoder.encode("vendedor123"));
-            vendedor.setNombreCompleto("Vendedor Demo");
-            vendedor.setRol(vendedorRole);
-            vendedor.setActivo(true); // ✅ SIEMPRE ACTIVO
-            usuarioRepository.save(vendedor);
-            System.out.println("✅ Usuario VENDEDOR: vendedor/vendedor123 (activo=true)");
-        } catch (RuntimeException e) {
-            System.err.println("❌ Error al crear usuarios: " + e.getMessage());
-            e.printStackTrace();
-        }
+        // Crear o actualizar usuario VENDEDOR - SIEMPRE ACTIVO
+        Usuario vendedor = usuarioRepository.findByUsername("vendedor").orElse(new Usuario());
+        vendedor.setUsername("vendedor");
+        vendedor.setPassword(passwordEncoder.encode("vendedor123"));
+        vendedor.setNombreCompleto("Vendedor Demo");
+        vendedor.setRol("VENDEDOR");
+        vendedor.setActivo(true);
+        usuarioRepository.save(vendedor);
+        System.out.println("✅ Usuario VENDEDOR: vendedor/vendedor123 (activo=true)");
     }
 
     // 3️⃣ UNIDADES DE MEDIDA
@@ -271,9 +265,48 @@ public class DataInitializer implements CommandLineRunner {
                 }
             }
             System.out.println("✅ Productos creados (10 ítems)");
+
+            // Crear notificaciones para productos con stock bajo
+            crearNotificacionesStockBajo();
         } catch (RuntimeException e) {
             System.err.println("❌ Error al crear productos: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    // Crear notificaciones para productos con stock bajo
+    private void crearNotificacionesStockBajo() {
+        List<Producto> productos = productoRepository.findAll();
+        int notificacionesCreadas = 0;
+
+        for (Producto producto : productos) {
+            // Solo crear notificación si el stock actual es menor o igual al mínimo
+            if (producto.getStockActual() != null && producto.getStockMinimo() != null
+                    && producto.getStockActual() <= producto.getStockMinimo()) {
+                // Verificar si ya existe una notificación activa para este producto
+                boolean yaExiste = notificacionRepository
+                        .existsByProductoIdProductoAndTipo(producto.getIdProducto(), TipoAlerta.STOCK_BAJO);
+
+                if (!yaExiste) {
+                    notificacionRepository.save(Notificacion.builder()
+                            .producto(producto)
+                            .tipo(TipoAlerta.STOCK_BAJO)
+                            .nivel(NivelAlerta.MEDIA)
+                            .titulo("Stock Bajo")
+                            .mensaje("El producto '" + producto.getNombre() + "' tiene stock bajo. Stock actual: "
+                                    + producto.getStockActual() + ", Stock mínimo: " + producto.getStockMinimo())
+                            .descripcion("Stock actual: " + producto.getStockActual() + " (mín: " + producto.getStockMinimo() + ")")
+                            .usuario("sistema")
+                            .leido(false)
+                            .fechaHora(LocalDateTime.now())
+                            .build());
+                    notificacionesCreadas++;
+                }
+            }
+        }
+
+        if (notificacionesCreadas > 0) {
+            System.out.println("✅ Notificaciones de stock bajo creadas: " + notificacionesCreadas);
         }
     }
 
@@ -326,9 +359,7 @@ public class DataInitializer implements CommandLineRunner {
                         .producto(producto)
                         .tipoMovimiento(TipoMovimiento.ENTRADA)
                         .cantidad(producto.getStockActual())
-                        .precio(producto.getPrecioCompra())
                         .descripcion("Compra inicial a proveedor")
-                        .usuarioMovimiento("admin")
                         .fechaMovimiento(LocalDateTime.now().minusDays(30)).build());
 
                 // 2. Salidas aleatorias (ventas)
@@ -338,9 +369,7 @@ public class DataInitializer implements CommandLineRunner {
                             .producto(producto)
                             .tipoMovimiento(TipoMovimiento.SALIDA)
                             .cantidad(cantidad)
-                            .precio(producto.getPrecio())
                             .descripcion("Venta a cliente")
-                            .usuarioMovimiento("vendedor")
                             .fechaMovimiento(LocalDateTime.now().minusDays(random.nextInt(25))).build());
                 }
 
@@ -350,9 +379,7 @@ public class DataInitializer implements CommandLineRunner {
                             .producto(producto)
                             .tipoMovimiento(TipoMovimiento.AJUSTE)
                             .cantidad(random.nextInt(2)) // 0-1 unidades
-                            .precio(producto.getPrecio())
                             .descripcion("Ajuste por inventario físico")
-                            .usuarioMovimiento("admin")
                             .fechaMovimiento(LocalDateTime.now().minusDays(random.nextInt(10))).build());
                 }
             }
