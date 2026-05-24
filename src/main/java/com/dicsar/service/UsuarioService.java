@@ -7,8 +7,10 @@ import com.dicsar.entity.Usuario;
 import com.dicsar.repository.UsuarioRepository;
 import com.dicsar.security.JwtUtil;
 import com.dicsar.exceptions.ResourceNotFoundException;
+import com.dicsar.exceptions.AccountLockedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,11 +20,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class UsuarioService {
+
+    private static final int MAX_INTENTOS = 5;
+    private static final int MINUTOS_BLOQUEO = 10;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -40,22 +46,47 @@ public class UsuarioService {
     private UserDetailsService userDetailsService;
 
     public AuthResponse login(LoginRequest loginRequest) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
-
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getUsername());
         Usuario usuario = usuarioRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new BadCredentialsException("Usuario o contraseña incorrecta"));
 
-        // Verificar que el usuario tenga un rol asignado
-        if (usuario.getRol() == null) {
-            throw new ResourceNotFoundException("El usuario no tiene un rol asignado");
+        if (usuario.getBloqueadoHasta() != null && usuario.getBloqueadoHasta().isAfter(LocalDateTime.now())) {
+            long minutosRestantes = java.time.Duration.between(LocalDateTime.now(), usuario.getBloqueadoHasta()).toMinutes();
+            throw new AccountLockedException("Usuario bloqueado. Intenta de nuevo en " + minutosRestantes + " minutos");
         }
 
-        String rolNombre = usuario.getRol();
-        final String jwt = jwtUtil.generateToken(userDetails, rolNombre);
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 
-        return new AuthResponse(jwt, usuario.getUsername(), usuario.getNombreCompleto(), rolNombre);
+            usuario.setIntentosFallidos(0);
+            usuario.setBloqueadoHasta(null);
+            usuarioRepository.save(usuario);
+
+            final UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getUsername());
+
+            if (usuario.getRol() == null) {
+                throw new ResourceNotFoundException("El usuario no tiene un rol asignado");
+            }
+
+            String rolNombre = usuario.getRol();
+            final String jwt = jwtUtil.generateToken(userDetails, rolNombre);
+
+            return new AuthResponse(jwt, usuario.getUsername(), usuario.getNombreCompleto(), rolNombre);
+
+        } catch (BadCredentialsException e) {
+            int intentos = (usuario.getIntentosFallidos() == null ? 0 : usuario.getIntentosFallidos()) + 1;
+            usuario.setIntentosFallidos(intentos);
+
+            if (intentos >= MAX_INTENTOS) {
+                usuario.setBloqueadoHasta(LocalDateTime.now().plusMinutes(MINUTOS_BLOQUEO));
+                usuarioRepository.save(usuario);
+                throw new AccountLockedException("Has excedido los 5 intentos. Tu cuenta ha sido bloqueada por 10 minutos");
+            }
+
+            usuarioRepository.save(usuario);
+            int intentosRestantes = MAX_INTENTOS - intentos;
+            throw new BadCredentialsException("Usuario o contraseña incorrecta. Te quedan " + intentosRestantes + " intentos");
+        }
     }
 
     @Transactional
