@@ -140,4 +140,32 @@ public class ReporteVentaController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @GetMapping("/exportar/cliente/{idCliente}/excel")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    public ResponseEntity<byte[]> exportarVentasClienteExcel(@PathVariable Long idCliente) {
+        try {
+            byte[] data = exportService.exportarVentasAExcel(idCliente);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            headers.set("Content-Disposition", "attachment; filename=ventas_cliente_" + idCliente + "_" + System.currentTimeMillis() + ".xlsx");
+            return new ResponseEntity<>(data, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/exportar/cliente/{idCliente}/pdf")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    public ResponseEntity<byte[]> exportarVentasClientePDF(@PathVariable Long idCliente) {
+        try {
+            byte[] data = exportService.exportarVentasAPDF(idCliente);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.set("Content-Disposition", "attachment; filename=ventas_cliente_" + idCliente + "_" + System.currentTimeMillis() + ".pdf");
+            return new ResponseEntity<>(data, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }

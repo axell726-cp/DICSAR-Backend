@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 @Entity
 @Table(name = "rol")
@@ -26,6 +28,9 @@ public class RolEntity {
     @Column(length = 255)
     private String descripcion;
 
+    @Column(name = "permisos", length = 500)
+    private String permisos;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;
@@ -45,5 +50,21 @@ public class RolEntity {
     @PreUpdate
     protected void onUpdate() {
         fechaActualizacion = LocalDateTime.now();
+    }
+
+    // Helper methods for permissions
+    public List<String> getPermisosList() {
+        if (permisos == null || permisos.isBlank()) {
+            return List.of();
+        }
+        return Arrays.asList(permisos.split(","));
+    }
+
+    public void setPermisosList(List<String> permisosList) {
+        if (permisosList == null || permisosList.isEmpty()) {
+            this.permisos = null;
+        } else {
+            this.permisos = String.join(",", permisosList);
+        }
     }
 }

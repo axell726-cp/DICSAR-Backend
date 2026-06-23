@@ -3,6 +3,7 @@ package com.dicsar.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -12,6 +13,8 @@ import com.dicsar.enums.EstadoVencimiento;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.persistence.LockModeType;
+
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
     // Buscar producto por código
@@ -19,6 +22,10 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
     // Validar existencia de producto por código
     boolean existsByCodigo(String codigo);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Producto p WHERE p.idProducto = :idProducto")
+    Optional<Producto> findByIdForUpdate(@Param("idProducto") Long idProducto);
 
     boolean existsByNombreAndCategoriaIdCategoria(String nombre, Long idCategoria);
 

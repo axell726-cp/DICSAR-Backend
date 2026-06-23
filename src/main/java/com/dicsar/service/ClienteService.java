@@ -21,6 +21,9 @@ public class ClienteService {
     @Autowired
     private ClienteRepository clienteRepository;
 
+    @Autowired
+    private ReporteVentaService reporteVentaService;
+
     // CRUD básico
     public List<Cliente> listarTodos() {
         return clienteRepository.findAll();
@@ -79,8 +82,15 @@ public class ClienteService {
         if (!clienteRepository.existsById(idCliente)) {
             throw new ResourceNotFoundException("Cliente no encontrado.");
         }
-        // Método placeholder: se conectará con ReporteVenta cuando sea necesario
-        return List.of();
+        // Devolver historial completo (no paginado)
+        return reporteVentaService.obtenerVentasPorClientePaisa(idCliente);
+    }
+
+    public PaginatedResponse<com.dicsar.dto.ReporteVentaDTO> obtenerHistorialComprasPaginado(Long idCliente, int pageNumber, int pageSize) {
+        if (!clienteRepository.existsById(idCliente)) {
+            throw new ResourceNotFoundException("Cliente no encontrado.");
+        }
+        return reporteVentaService.obtenerVentasPorClientePaginado(idCliente, pageNumber, pageSize);
     }
 
     // Métodos de búsqueda con paginación

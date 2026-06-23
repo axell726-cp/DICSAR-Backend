@@ -124,4 +124,13 @@ public class ClienteController {
         List<?> historial = clienteService.obtenerHistorialCompras(id);
         return ResponseEntity.ok(historial);
     }
+
+    @GetMapping("/{id}/historial")
+    public ResponseEntity<PaginatedResponse<com.dicsar.dto.ReporteVentaDTO>> historialPaginado(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PaginatedResponse<com.dicsar.dto.ReporteVentaDTO> p = clienteService.obtenerHistorialComprasPaginado(id, page, size);
+        return ResponseEntity.ok(p);
+    }
 }

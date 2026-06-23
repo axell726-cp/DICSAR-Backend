@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import com.dicsar.service.ExportService;
 
@@ -59,6 +60,21 @@ public class ExportController {
             headers.setContentType(MediaType.APPLICATION_PDF);
             headers.set("Content-Disposition", "attachment; filename=clientes_" + System.currentTimeMillis() + ".pdf");
             return new ResponseEntity<>(pdfData, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/comprobante/{id}/pdf")
+    public ResponseEntity<byte[]> exportarComprobantePDF(@PathVariable Long id) {
+        try {
+            byte[] pdfData = exportService.exportarComprobantePDF(id);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.set("Content-Disposition", "attachment; filename=comprobante_" + id + ".pdf");
+            return new ResponseEntity<>(pdfData, headers, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

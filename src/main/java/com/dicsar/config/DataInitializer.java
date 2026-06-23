@@ -267,7 +267,8 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println("✅ Productos creados (10 ítems)");
 
             // Crear notificaciones para productos con stock bajo
-            crearNotificacionesStockBajo();
+            // TEMPORALMENTE DESHABILITADO - DEBUG DB ISSUE
+            // crearNotificacionesStockBajo();
         } catch (RuntimeException e) {
             System.err.println("❌ Error al crear productos: " + e.getMessage());
             e.printStackTrace();

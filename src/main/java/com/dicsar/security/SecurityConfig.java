@@ -81,6 +81,16 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/proveedores/**").hasAnyRole("ADMIN", "VENDEDOR")
                 .requestMatchers(HttpMethod.PUT, "/api/proveedores/**").hasAnyRole("ADMIN", "VENDEDOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/proveedores/**").hasAnyRole("ADMIN", "VENDEDOR")
+
+                // Clientes - permitir listado y consultas para ADMIN y VENDEDOR
+                .requestMatchers(HttpMethod.GET, "/api/clientes/**").hasAnyRole("ADMIN", "VENDEDOR")
+                .requestMatchers(HttpMethod.POST, "/api/clientes/**").hasAnyRole("ADMIN", "VENDEDOR")
+                .requestMatchers(HttpMethod.PUT, "/api/clientes/**").hasAnyRole("ADMIN", "VENDEDOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/clientes/**").hasRole("ADMIN")
+
+                // Reportes de ventas - permitir acceso a VENDEDOR y ADMIN según controlador
+                .requestMatchers(HttpMethod.GET, "/api/reportes-ventas/**").hasAnyRole("ADMIN", "VENDEDOR")
+                .requestMatchers(HttpMethod.POST, "/api/reportes-ventas/**").hasAnyRole("ADMIN", "VENDEDOR")
                 
                 // Notificaciones - Acceso completo para ADMIN y VENDEDOR
                 .requestMatchers("/api/notificaciones/**").hasAnyRole("ADMIN", "VENDEDOR")
