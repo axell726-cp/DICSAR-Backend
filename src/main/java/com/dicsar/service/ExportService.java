@@ -59,20 +59,6 @@ public class ExportService {
     private static final Color DARK_BLUE = new DeviceRgb(30, 58, 138);
     private static final Color GRAY_TEXT = new DeviceRgb(100, 116, 139);
 
-    // Helper function to calculate subtotal and igv if null
-    private void calcularTotalesSiNecesario(ReporteVenta venta) {
-        if (venta.getSubtotal() == null || venta.getIgv() == null) {
-            Double precio = venta.getPrecioUnitario() != null ? venta.getPrecioUnitario() : 0.0;
-            Integer cantidad = venta.getCantidad() != null ? venta.getCantidad() : 0;
-            Double subtotal = precio * cantidad;
-            Double igv = Math.round(subtotal * 0.18 * 100.0) / 100.0;
-            Double total = Math.round((subtotal + igv) * 100.0) / 100.0;
-            venta.setSubtotal(subtotal);
-            venta.setIgv(igv);
-            venta.setTotal(total);
-        }
-    }
-
     /**
      * Exportar clientes a CSV
      */
@@ -222,17 +208,12 @@ public class ExportService {
     public byte[] exportarVentasACSV(Long idCliente) throws IOException {
         List<ReporteVenta> ventas = reporteVentaService.obtenerVentasPorClientePaisa(idCliente);
 
-        // Ensure all ventas have subtotal and igv
-        for (ReporteVenta venta : ventas) {
-            calcularTotalesSiNecesario(venta);
-        }
-
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         OutputStreamWriter writer = new OutputStreamWriter(outputStream);
 
         CSVFormat format = CSVFormat.DEFAULT.withHeader(
                 "ID VENTA", "CLIENTE", "PRODUCTO", "CANTIDAD", "PRECIO UNITARIO",
-                "SUBTOTAL", "IGV", "TOTAL", "TIPO DOCUMENTO", "FECHA VENTA", "ESTADO");
+                "TOTAL", "TIPO DOCUMENTO", "FECHA VENTA", "ESTADO");
 
         CSVPrinter printer = new CSVPrinter(writer, format);
 
@@ -243,8 +224,6 @@ public class ExportService {
                     venta.getProducto().getNombre(),
                     venta.getCantidad(),
                     venta.getPrecioUnitario(),
-                    venta.getSubtotal(),
-                    venta.getIgv(),
                     venta.getTotal(),
                     venta.getTipoDocumento(),
                     venta.getFechaVenta().format(DATE_FORMATTER),
@@ -263,17 +242,12 @@ public class ExportService {
     public byte[] exportarTodasVentasACSV() throws IOException {
         List<ReporteVenta> ventas = reporteVentaService.listar();
 
-        // Ensure all ventas have subtotal and igv
-        for (ReporteVenta venta : ventas) {
-            calcularTotalesSiNecesario(venta);
-        }
-
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         OutputStreamWriter writer = new OutputStreamWriter(outputStream);
 
         CSVFormat format = CSVFormat.DEFAULT.withHeader(
                 "ID VENTA", "CLIENTE", "PRODUCTO", "CANTIDAD", "PRECIO UNITARIO",
-                "SUBTOTAL", "IGV", "TOTAL", "TIPO DOCUMENTO", "FECHA VENTA", "ESTADO");
+                "TOTAL", "TIPO DOCUMENTO", "FECHA VENTA", "ESTADO");
 
         CSVPrinter printer = new CSVPrinter(writer, format);
 
@@ -284,8 +258,6 @@ public class ExportService {
                     venta.getProducto().getNombre(),
                     venta.getCantidad(),
                     venta.getPrecioUnitario(),
-                    venta.getSubtotal(),
-                    venta.getIgv(),
                     venta.getTotal(),
                     venta.getTipoDocumento(),
                     venta.getFechaVenta().format(DATE_FORMATTER),
@@ -303,11 +275,6 @@ public class ExportService {
      */
     public byte[] exportarVentasAExcel(Long idCliente) throws IOException {
         List<ReporteVenta> ventas = reporteVentaService.obtenerVentasPorClientePaisa(idCliente);
-
-        // Ensure all ventas have subtotal and igv
-        for (ReporteVenta venta : ventas) {
-            calcularTotalesSiNecesario(venta);
-        }
 
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Ventas Cliente");
@@ -334,8 +301,8 @@ public class ExportService {
             row.createCell(2).setCellValue(venta.getProducto().getNombre());
             row.createCell(3).setCellValue(venta.getCantidad());
             row.createCell(4).setCellValue(venta.getPrecioUnitario());
-            row.createCell(5).setCellValue(venta.getSubtotal());
-            row.createCell(6).setCellValue(venta.getIgv());
+            row.createCell(5).setCellValue(venta.getSubtotal() != null ? venta.getSubtotal() : 0.0);
+            row.createCell(6).setCellValue(venta.getIgv() != null ? venta.getIgv() : 0.0);
             row.createCell(7).setCellValue(venta.getTotal());
             row.createCell(8).setCellValue(venta.getTipoDocumento());
             row.createCell(9).setCellValue(venta.getEstado() ? "Activa" : "Anulada");
@@ -354,11 +321,6 @@ public class ExportService {
      */
     public byte[] exportarVentasAPDF(Long idCliente) throws IOException {
         List<ReporteVenta> ventas = reporteVentaService.obtenerVentasPorClientePaisa(idCliente);
-
-        // Ensure all ventas have subtotal and igv
-        for (ReporteVenta venta : ventas) {
-            calcularTotalesSiNecesario(venta);
-        }
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PdfWriter writer = new PdfWriter(outputStream);
@@ -404,10 +366,10 @@ public class ExportService {
             table.addCell(new Cell().add(new Paragraph(venta.getFechaVenta().format(DATE_FORMATTER)).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(venta.getProducto().getNombre()).setFontSize(9)));
             table.addCell(new Cell().add(new Paragraph(String.valueOf(venta.getCantidad()))).setTextAlignment(TextAlignment.CENTER).setFontSize(9));
-            table.addCell(new Cell().add(new Paragraph("S/ " + String.valueOf(venta.getPrecioUnitario())).setFontSize(9)));
-            table.addCell(new Cell().add(new Paragraph("S/ " + String.valueOf(venta.getSubtotal())).setFontSize(9)));
-            table.addCell(new Cell().add(new Paragraph("S/ " + String.valueOf(venta.getIgv())).setFontSize(9)));
-            table.addCell(new Cell().add(new Paragraph("S/ " + String.valueOf(venta.getTotal())).setFontSize(9)));
+            table.addCell(new Cell().add(new Paragraph(String.valueOf(venta.getPrecioUnitario())).setFontSize(9)));
+            table.addCell(new Cell().add(new Paragraph(String.valueOf(venta.getSubtotal() != null ? venta.getSubtotal() : 0.0))).setFontSize(9));
+            table.addCell(new Cell().add(new Paragraph(String.valueOf(venta.getIgv() != null ? venta.getIgv() : 0.0))).setFontSize(9));
+            table.addCell(new Cell().add(new Paragraph(String.valueOf(venta.getTotal()))).setFontSize(9));
             table.addCell(new Cell().add(new Paragraph(venta.getTipoDocumento() != null ? venta.getTipoDocumento() : "")).setFontSize(9));
             table.addCell(new Cell().add(new Paragraph(venta.getEstado() ? "Activa" : "Anulada").setFontSize(9)));
         }
@@ -424,9 +386,6 @@ public class ExportService {
         java.util.Optional<ReporteVenta> opt = reporteVentaRepository.findById(idVenta);
         if (opt.isEmpty()) throw new IllegalArgumentException("Venta no encontrada");
         ReporteVenta venta = opt.get();
-
-        // Ensure subtotal and igv are calculated
-        calcularTotalesSiNecesario(venta);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         PdfWriter writer = new PdfWriter(outputStream);

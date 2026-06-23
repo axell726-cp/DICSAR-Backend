@@ -131,11 +131,14 @@ public class ReporteVentaService {
     }
 
     public List<ReporteVenta> listar() {
-        return reporteVentaRepository.findAll();
+        return reporteVentaRepository.findAll().stream()
+                .peek(this::calcularTotalesSiNecesario)
+                .collect(Collectors.toList());
     }
 
     public List<ReporteVentaDTO> listarDTO() {
         return reporteVentaRepository.findAll().stream()
+                .peek(this::calcularTotalesSiNecesario)
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -143,29 +146,51 @@ public class ReporteVentaService {
     public PaginatedResponse<ReporteVentaDTO> listarPaginado(int pageNumber, int pageSize) {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         Page<ReporteVenta> page = reporteVentaRepository.findAll(pageable);
+        page.getContent().forEach(this::calcularTotalesSiNecesario);
         return convertPageToResponse(page);
     }
 
     public List<ReporteVenta> obtenerPorRangoFechas(LocalDateTime inicio, LocalDateTime fin) {
-        return reporteVentaRepository.findByFechaVentaBetween(inicio, fin);
+        return reporteVentaRepository.findByFechaVentaBetween(inicio, fin).stream()
+                .peek(this::calcularTotalesSiNecesario)
+                .collect(Collectors.toList());
     }
 
     public PaginatedResponse<ReporteVentaDTO> obtenerPorRangoFechasPaginado(
             LocalDateTime inicio, LocalDateTime fin, int pageNumber, int pageSize) {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         Page<ReporteVenta> page = reporteVentaRepository.findByFechaVentaBetween(inicio, fin, pageable);
+        page.getContent().forEach(this::calcularTotalesSiNecesario);
         return convertPageToResponse(page);
     }
 
     public List<ReporteVenta> obtenerVentasPorClientePaisa(Long idCliente) {
-        return reporteVentaRepository.findByCliente(idCliente);
+        return reporteVentaRepository.findByCliente(idCliente).stream()
+                .peek(this::calcularTotalesSiNecesario)
+                .collect(Collectors.toList());
     }
 
     public PaginatedResponse<ReporteVentaDTO> obtenerVentasPorClientePaginado(
             Long idCliente, int pageNumber, int pageSize) {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         Page<ReporteVenta> page = reporteVentaRepository.findByCliente(idCliente, pageable);
+        page.getContent().forEach(this::calcularTotalesSiNecesario);
         return convertPageToResponse(page);
+    }
+
+    private void calcularTotalesSiNecesario(ReporteVenta venta) {
+        if (venta.getSubtotal() == null || venta.getIgv() == null) {
+            Double precio = venta.getPrecioUnitario() != null ? venta.getPrecioUnitario() : 0.0;
+            Integer cantidad = venta.getCantidad() != null ? venta.getCantidad() : 0;
+            Double subtotal = precio * cantidad;
+            Double igv = Math.round(subtotal * 0.18 * 100.0) / 100.0;
+            Double total = Math.round((subtotal + igv) * 100.0) / 100.0;
+            venta.setSubtotal(subtotal);
+            venta.setIgv(igv);
+            if (venta.getTotal() == null) {
+                venta.setTotal(total);
+            }
+        }
     }
 
     public List<Object[]> obtenerProductosMasVendidos() {
