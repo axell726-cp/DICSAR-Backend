@@ -5,7 +5,9 @@ import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import com.dicsar.entity.UnidadMed;
 import com.dicsar.service.UnidadMedService;
@@ -22,11 +24,13 @@ public class UnidadMedController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
     public List<UnidadMed> listar() {
         return unidadMedService.listar();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
     public ResponseEntity<UnidadMed> obtener(@PathVariable Long id) {
         return unidadMedService.obtener(id)
                 .map(ResponseEntity::ok)
@@ -34,18 +38,21 @@ public class UnidadMedController {
     }
 
     @PostMapping
-    public ResponseEntity<UnidadMed> guardar(@RequestBody UnidadMed unidadMed) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UnidadMed> guardar(@Valid @RequestBody UnidadMed unidadMed) {
         UnidadMed guardada = unidadMedService.guardar(unidadMed);
         return ResponseEntity.status(HttpStatus.CREATED).body(guardada);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UnidadMed> actualizar(@PathVariable Long id, @RequestBody UnidadMed unidadMed) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UnidadMed> actualizar(@PathVariable Long id, @Valid @RequestBody UnidadMed unidadMed) {
         UnidadMed actualizada = unidadMedService.actualizar(id, unidadMed);
         return ResponseEntity.ok(actualizada);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> eliminar(@PathVariable Long id) {
         Optional<UnidadMed> existente = unidadMedService.obtener(id);
 

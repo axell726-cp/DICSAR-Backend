@@ -39,14 +39,14 @@ public class ClienteController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Cliente> registrar(@Valid @RequestBody Cliente cliente) {
         Cliente saved = clienteService.registrar(cliente);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Cliente> actualizar(@PathVariable Long id, @Valid @RequestBody Cliente cliente) {
         Cliente updated = clienteService.actualizar(id, cliente);
         return ResponseEntity.ok(updated);

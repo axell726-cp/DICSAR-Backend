@@ -3,6 +3,7 @@ package com.dicsar.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +22,7 @@ public class HistorialPrecioController {
 	private final HistorialPrecioService historialPrecioService;
 
 	@GetMapping("/producto/{idProducto}")
+	@PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
 	public ResponseEntity<List<HistorialPrecio>> obtenerHistorialPorProducto(@PathVariable Long idProducto) {
 		List<HistorialPrecio> historial = historialPrecioService.obtenerHistorialPorProducto(idProducto);
 		return ResponseEntity.ok(historial);

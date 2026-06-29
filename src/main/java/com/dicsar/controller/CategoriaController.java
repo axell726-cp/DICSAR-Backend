@@ -3,7 +3,9 @@ package com.dicsar.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,17 +28,20 @@ public class CategoriaController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
     public List<Categoria> listar() {
         return categoriaService.listar();
     }
 
     @PostMapping
-    public Categoria crear(@RequestBody Categoria categoria) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public Categoria crear(@Valid @RequestBody Categoria categoria) {
         return categoriaService.guardar(categoria);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Categoria> actualizar(@PathVariable Long id, @RequestBody Categoria categoria) {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Categoria> actualizar(@PathVariable Long id, @Valid @RequestBody Categoria categoria) {
         return categoriaService.obtener(id)
                 .map(c -> {
                     c.setNombre(categoria.getNombre());
@@ -47,6 +52,7 @@ public class CategoriaController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public void eliminar(@PathVariable Long id) {
         categoriaService.eliminar(id);
     }
