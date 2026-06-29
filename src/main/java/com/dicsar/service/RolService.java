@@ -1,6 +1,8 @@
 package com.dicsar.service;
 
 import com.dicsar.entity.RolEntity;
+import com.dicsar.entity.AuditLog;
+import com.dicsar.repository.AuditLogRepository;
 import com.dicsar.repository.RolRepository;
 import com.dicsar.exceptions.DuplicateResourceException;
 import com.dicsar.exceptions.ResourceNotFoundException;
@@ -17,6 +19,7 @@ import java.util.Optional;
 public class RolService {
 
     private final RolRepository rolRepository;
+    private final AuditLogRepository auditLogRepository;
 
     @Transactional(readOnly = true)
     public List<RolEntity> listarTodos() {
@@ -58,7 +61,9 @@ public class RolService {
         rol.setFechaCreacion(LocalDateTime.now());
         rol.setFechaActualizacion(LocalDateTime.now());
 
-        return rolRepository.save(rol);
+        RolEntity saved = rolRepository.save(rol);
+        logCambio("CREAR", "Creado rol id=" + saved.getIdRol() + " nombre=" + saved.getNombre());
+        return saved;
     }
 
     @Transactional
@@ -82,9 +87,15 @@ public class RolService {
             rol.setActivo(rolActualizado.getActivo());
         }
 
+        if (rolActualizado.getPermisos() != null) {
+            rol.setPermisos(rolActualizado.getPermisos());
+        }
+
         rol.setFechaActualizacion(LocalDateTime.now());
 
-        return rolRepository.save(rol);
+        RolEntity saved = rolRepository.save(rol);
+        logCambio("ACTUALIZAR", "Actualizado rol id=" + saved.getIdRol() + " nombre=" + saved.getNombre());
+        return saved;
     }
 
     @Transactional
@@ -99,5 +110,25 @@ public class RolService {
         }
 
         rolRepository.deleteById(id);
+        logCambio("ELIMINAR", "Eliminado rol id=" + id + " nombre=" + rol.getNombre());
+    }
+
+    private void logCambio(String accion, String detalle) {
+        try {
+            AuditLog a = new AuditLog();
+            a.setEntidad("Rol");
+            a.setAccion(accion);
+            String usuario = "unknown";
+            try {
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null) usuario = auth.getName();
+            } catch (Exception ignored) {}
+            a.setUsuario(usuario);
+            a.setFecha(LocalDateTime.now());
+            a.setDetalle(detalle);
+            auditLogRepository.save(a);
+        } catch (Exception ex) {
+            // No interrumpir la operación principal por fallas en auditoría
+        }
     }
 }

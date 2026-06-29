@@ -27,6 +27,15 @@ public class ReporteVenta {
     private Double precioUnitario;
     private Double total;
 
+    // Numeración de comprobante (se completará al crear la venta)
+    private Long comprobanteNumero;
+
+    // Subtotal antes del IGV
+    private Double subtotal;
+
+    // IGV aplicado
+    private Double igv;
+
     private String tipoDocumento; // "Boleta", "Factura", etc.
 
     @Builder.Default

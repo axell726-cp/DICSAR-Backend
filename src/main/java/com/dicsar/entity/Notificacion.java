@@ -41,9 +41,11 @@ public class Notificacion {
     private Producto producto;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 50)
     private TipoAlerta tipo;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 50)
     private NivelAlerta nivel;
 
     @Column(nullable = false, length = 300)

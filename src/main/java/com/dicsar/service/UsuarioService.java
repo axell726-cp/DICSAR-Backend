@@ -47,7 +47,11 @@ public class UsuarioService {
 
     public AuthResponse login(LoginRequest loginRequest) {
         Usuario usuario = usuarioRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new BadCredentialsException("Usuario o contraseña incorrecta"));
+                .orElseThrow(() -> new ResourceNotFoundException("El usuario no existe"));
+
+        if (!usuario.getActivo()) {
+            throw new BadCredentialsException("El usuario está desactivado");
+        }
 
         if (usuario.getBloqueadoHasta() != null && usuario.getBloqueadoHasta().isAfter(LocalDateTime.now())) {
             long minutosRestantes = java.time.Duration.between(LocalDateTime.now(), usuario.getBloqueadoHasta()).toMinutes();
@@ -85,7 +89,7 @@ public class UsuarioService {
 
             usuarioRepository.save(usuario);
             int intentosRestantes = MAX_INTENTOS - intentos;
-            throw new BadCredentialsException("Usuario o contraseña incorrecta. Te quedan " + intentosRestantes + " intentos");
+            throw new BadCredentialsException("usuario o contraseña incorrecta. Te quedan " + intentosRestantes + " intentos");
         }
     }
 
