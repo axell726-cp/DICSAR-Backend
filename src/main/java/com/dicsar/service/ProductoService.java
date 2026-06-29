@@ -262,6 +262,9 @@ public class ProductoService {
     }
 
     public void actualizarSoloPrecio(Long id, Double nuevoPrecio, String usuario) {
+        if (nuevoPrecio == null || nuevoPrecio <= 0) {
+            throw new IllegalArgumentException("El precio debe ser mayor a cero.");
+        }
         Producto producto = obtenerPorId(id);
         Double precioAnterior = producto.getPrecio();
         Usuario usuarioObj = usuarioService.buscarPorUsername(usuario);

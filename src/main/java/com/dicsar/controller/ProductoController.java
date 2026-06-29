@@ -63,12 +63,14 @@ public class ProductoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResultadoProductoDTO> crear(@Valid @RequestBody ProductoDTO dto) {
         ResultadoProductoDTO resultado = productoService.guardar(dto, "admin");
         return ResponseEntity.status(HttpStatus.CREATED).body(resultado);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ResultadoProductoDTO> actualizar(@PathVariable Long id,
             @Valid @RequestBody ProductoDTO dto) {
         ResultadoProductoDTO resultado = productoService.actualizar(id, dto, "admin");
@@ -76,14 +78,19 @@ public class ProductoController {
     }
 
     @PatchMapping("/{id}/precio")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> actualizarPrecio(@PathVariable Long id,
             @RequestParam Double nuevoPrecio,
             @RequestParam String usuario) {
+        if (nuevoPrecio == null || nuevoPrecio <= 0) {
+            throw new IllegalArgumentException("El precio debe ser mayor a cero.");
+        }
         productoService.actualizarSoloPrecio(id, nuevoPrecio, usuario);
         return ResponseEntity.ok("Precio actualizado correctamente");
     }
 
     @PatchMapping("/{id}/estado")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> actualizarEstado(@PathVariable Long id,
             @RequestParam boolean nuevoEstado,
             @RequestParam String usuario) {
@@ -92,18 +99,21 @@ public class ProductoController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> eliminar(@PathVariable Long id) {
         productoService.eliminarConRegla(id);
         return ResponseEntity.ok("Producto eliminado correctamente");
     }
 
     @GetMapping("/{id}/historial-precios")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
     public ResponseEntity<List<HistorialPrecio>> obtenerHistorialPrecios(@PathVariable Long id) {
         List<HistorialPrecio> historial = historialPrecioService.obtenerHistorialPorProducto(id);
         return historial.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(historial);
     }
 
     @GetMapping("/stock")
+    @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
     public ResponseEntity<List<Producto>> filtrarStock(
             @RequestParam(required = false) Long categoriaId,
             @RequestParam(required = false) Long proveedorId,

@@ -54,27 +54,33 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/usuarios/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/reportes/**").hasRole("ADMIN")
                 
-                // Endpoints para ADMIN y VENDEDOR (productos y movimientos)
+                // Clientes: VENDEDOR solo lectura (permitir al frontend listar clientes)
+                .requestMatchers(HttpMethod.GET, "/api/clientes/**").hasAnyRole("ADMIN", "VENDEDOR")
+
+                // Productos: VENDEDOR solo lectura
                 .requestMatchers(HttpMethod.GET, "/api/productos/**").hasAnyRole("ADMIN", "VENDEDOR")
-                .requestMatchers(HttpMethod.POST, "/api/productos/**").hasAnyRole("ADMIN", "VENDEDOR")
-                .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasAnyRole("ADMIN", "VENDEDOR")
-                .requestMatchers(HttpMethod.PATCH, "/api/productos/**").hasAnyRole("ADMIN", "VENDEDOR")
+                .requestMatchers(HttpMethod.POST, "/api/productos/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/productos/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PATCH, "/api/productos/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/productos/**").hasRole("ADMIN")
+
+                // Movimientos: VENDEDOR puede consultar y registrar entradas/salidas
                 .requestMatchers(HttpMethod.GET, "/api/movimientos/**").hasAnyRole("ADMIN", "VENDEDOR")
                 .requestMatchers(HttpMethod.POST, "/api/movimientos/**").hasAnyRole("ADMIN", "VENDEDOR")
                 
-                // Historial de Precios - CRUD completo para ADMIN y VENDEDOR
-                .requestMatchers("/api/historial-precios/**").hasAnyRole("ADMIN", "VENDEDOR")
+                // Historial de Precios - solo lectura para VENDEDOR
+                .requestMatchers(HttpMethod.GET, "/api/historial-precios/**").hasAnyRole("ADMIN", "VENDEDOR")
                 
-                // Categorías y Unidades de Medida - CRUD completo para ADMIN y VENDEDOR
+                // Categorías y Unidades: VENDEDOR solo lectura
                 .requestMatchers(HttpMethod.GET, "/api/categorias/**").hasAnyRole("ADMIN", "VENDEDOR")
-                .requestMatchers(HttpMethod.POST, "/api/categorias/**").hasAnyRole("ADMIN", "VENDEDOR")
-                .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasAnyRole("ADMIN", "VENDEDOR")
-                .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasAnyRole("ADMIN", "VENDEDOR")
+                .requestMatchers(HttpMethod.POST, "/api/categorias/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/categorias/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/categorias/**").hasRole("ADMIN")
                 
                 .requestMatchers(HttpMethod.GET, "/api/unidades-medida/**").hasAnyRole("ADMIN", "VENDEDOR")
-                .requestMatchers(HttpMethod.POST, "/api/unidades-medida/**").hasAnyRole("ADMIN", "VENDEDOR")
-                .requestMatchers(HttpMethod.PUT, "/api/unidades-medida/**").hasAnyRole("ADMIN", "VENDEDOR")
-                .requestMatchers(HttpMethod.DELETE, "/api/unidades-medida/**").hasAnyRole("ADMIN", "VENDEDOR")
+                .requestMatchers(HttpMethod.POST, "/api/unidades-medida/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/unidades-medida/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/unidades-medida/**").hasRole("ADMIN")
                 
                 // Proveedores - CRUD completo para ADMIN y VENDEDOR
                 .requestMatchers(HttpMethod.GET, "/api/proveedores/**").hasAnyRole("ADMIN", "VENDEDOR")

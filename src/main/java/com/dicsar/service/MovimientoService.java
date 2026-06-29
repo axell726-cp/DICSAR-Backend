@@ -56,6 +56,14 @@ public class MovimientoService {
 		int stockActual = producto.getStockActual();
 		int cantidad = movimiento.getCantidad();
 
+		if (Boolean.FALSE.equals(producto.getEstado())) {
+			throw new IllegalArgumentException("No se puede registrar movimiento para un producto inactivo.");
+		}
+
+		if (cantidad <= 0) {
+			throw new IllegalArgumentException("La cantidad debe ser mayor a cero.");
+		}
+
 		switch (movimiento.getTipoMovimiento()) {
 			case ENTRADA -> {
 				producto.setStockActual(stockActual + cantidad);

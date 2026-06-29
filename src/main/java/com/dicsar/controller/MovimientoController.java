@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -48,6 +49,24 @@ public class MovimientoController {
     public ResponseEntity<Movimiento> crearMovimiento(@RequestBody Movimiento movimiento,
             Authentication authentication) {
         String usuario = authentication.getName();
+
+        if (movimiento.getTipoMovimiento() == TipoMovimiento.AJUSTE
+                && authentication.getAuthorities().stream()
+                        .noneMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
+            throw new AccessDeniedException("Los vendedores no pueden registrar ajustes de inventario.");
+        }
+
+        if (movimiento.getProducto() == null || movimiento.getProducto().getIdProducto() == null) {
+            throw new IllegalArgumentException("Debe seleccionar un producto.");
+        }
+
+        if (movimiento.getCantidad() == null || movimiento.getCantidad() <= 0) {
+            throw new IllegalArgumentException("La cantidad debe ser mayor a cero.");
+        }
+
+        if (movimiento.getTipoMovimiento() == null) {
+            throw new IllegalArgumentException("Debe seleccionar un tipo de movimiento.");
+        }
 
         // Validar que el producto exista
         Producto producto = productoService.obtenerPorId(movimiento.getProducto().getIdProducto());
