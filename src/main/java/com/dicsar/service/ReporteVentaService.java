@@ -52,20 +52,13 @@ public class ReporteVentaService {
     @Transactional
     public ReporteVenta crear(ReporteVenta venta) {
         try {
-            if (venta == null || venta.getProducto() == null || venta.getProducto().getIdProducto() == null) {
-                throw new IllegalArgumentException("Debe indicar el producto de la venta.");
-            }
-            if (venta.getCantidad() == null || venta.getCantidad() <= 0) {
-                throw new IllegalArgumentException("La cantidad de la venta debe ser mayor a cero.");
-            }
-
             // 1. Validar que el producto existe
-            Producto producto = productoRepository.findByIdForUpdate(venta.getProducto().getIdProducto())
+            Producto producto = productoRepository.findById(venta.getProducto().getIdProducto())
                     .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
 
             // 2. Validar que hay stock suficiente
             if (venta.getCantidad() > producto.getStockActual()) {
-                throw new IllegalArgumentException("Stock insuficiente. Disponible: " + producto.getStockActual());
+                throw new RuntimeException("Stock insuficiente. Disponible: " + producto.getStockActual());
             }
 
             // 3. Calcular y asignar precioUnitario
@@ -88,7 +81,7 @@ public class ReporteVentaService {
 
             ReporteVenta nuevaVenta;
             try {
-                nuevaVenta = reporteVentaRepository.saveAndFlush(venta);
+                nuevaVenta = reporteVentaRepository.save(venta);
             } catch (Exception exSaveReporte) {
                 logger.error("Fallo al guardar reporte_venta", exSaveReporte);
                 throw exSaveReporte;
@@ -98,7 +91,7 @@ public class ReporteVentaService {
             producto.setStockActual(producto.getStockActual() - venta.getCantidad());
             try {
                 logger.debug("Actualizando stock producto id={} nuevoStock={}", producto.getIdProducto(), producto.getStockActual());
-                productoRepository.saveAndFlush(producto);
+                productoRepository.save(producto);
             } catch (Exception exSaveProducto) {
                 logger.error("Fallo al actualizar producto id={}", producto != null ? producto.getIdProducto() : null, exSaveProducto);
                 throw exSaveProducto;
@@ -114,7 +107,7 @@ public class ReporteVentaService {
                     + " - " + venta.getTipoDocumento() + " #" + nuevaVenta.getIdVenta());
             movimiento.setFechaMovimiento(LocalDateTime.now());
             try {
-                movimientoRepository.saveAndFlush(movimiento);
+                movimientoRepository.save(movimiento);
             } catch (Exception exSaveMovimiento) {
                 logger.error("Fallo al guardar movimiento for productoId={}", producto != null ? producto.getIdProducto() : null, exSaveMovimiento);
                 throw exSaveMovimiento;
@@ -131,14 +124,11 @@ public class ReporteVentaService {
     }
 
     public List<ReporteVenta> listar() {
-        return reporteVentaRepository.findAll().stream()
-                .peek(this::calcularTotalesSiNecesario)
-                .collect(Collectors.toList());
+        return reporteVentaRepository.findAll();
     }
 
     public List<ReporteVentaDTO> listarDTO() {
         return reporteVentaRepository.findAll().stream()
-                .peek(this::calcularTotalesSiNecesario)
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -146,51 +136,29 @@ public class ReporteVentaService {
     public PaginatedResponse<ReporteVentaDTO> listarPaginado(int pageNumber, int pageSize) {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         Page<ReporteVenta> page = reporteVentaRepository.findAll(pageable);
-        page.getContent().forEach(this::calcularTotalesSiNecesario);
         return convertPageToResponse(page);
     }
 
     public List<ReporteVenta> obtenerPorRangoFechas(LocalDateTime inicio, LocalDateTime fin) {
-        return reporteVentaRepository.findByFechaVentaBetween(inicio, fin).stream()
-                .peek(this::calcularTotalesSiNecesario)
-                .collect(Collectors.toList());
+        return reporteVentaRepository.findByFechaVentaBetween(inicio, fin);
     }
 
     public PaginatedResponse<ReporteVentaDTO> obtenerPorRangoFechasPaginado(
             LocalDateTime inicio, LocalDateTime fin, int pageNumber, int pageSize) {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         Page<ReporteVenta> page = reporteVentaRepository.findByFechaVentaBetween(inicio, fin, pageable);
-        page.getContent().forEach(this::calcularTotalesSiNecesario);
         return convertPageToResponse(page);
     }
 
     public List<ReporteVenta> obtenerVentasPorClientePaisa(Long idCliente) {
-        return reporteVentaRepository.findByCliente(idCliente).stream()
-                .peek(this::calcularTotalesSiNecesario)
-                .collect(Collectors.toList());
+        return reporteVentaRepository.findByCliente(idCliente);
     }
 
     public PaginatedResponse<ReporteVentaDTO> obtenerVentasPorClientePaginado(
             Long idCliente, int pageNumber, int pageSize) {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
         Page<ReporteVenta> page = reporteVentaRepository.findByCliente(idCliente, pageable);
-        page.getContent().forEach(this::calcularTotalesSiNecesario);
         return convertPageToResponse(page);
-    }
-
-    private void calcularTotalesSiNecesario(ReporteVenta venta) {
-        if (venta.getSubtotal() == null || venta.getIgv() == null) {
-            Double precio = venta.getPrecioUnitario() != null ? venta.getPrecioUnitario() : 0.0;
-            Integer cantidad = venta.getCantidad() != null ? venta.getCantidad() : 0;
-            Double subtotal = precio * cantidad;
-            Double igv = Math.round(subtotal * 0.18 * 100.0) / 100.0;
-            Double total = Math.round((subtotal + igv) * 100.0) / 100.0;
-            venta.setSubtotal(subtotal);
-            venta.setIgv(igv);
-            if (venta.getTotal() == null) {
-                venta.setTotal(total);
-            }
-        }
     }
 
     public List<Object[]> obtenerProductosMasVendidos() {
@@ -237,17 +205,13 @@ public class ReporteVentaService {
                 .idVenta(venta.getIdVenta())
                 .idCliente(venta.getCliente().getIdCliente())
                 .nombreCliente(venta.getCliente().getNombre())
-                .apellidosCliente(venta.getCliente().getApellidos())
                 .emailCliente(venta.getCliente().getEmail())
                 .idProducto(venta.getProducto().getIdProducto())
                 .nombreProducto(venta.getProducto().getNombre())
                 .cantidad(venta.getCantidad())
                 .precioUnitario(venta.getPrecioUnitario())
-                .subtotal(venta.getSubtotal())
-                .igv(venta.getIgv())
                 .total(venta.getTotal())
                 .tipoDocumento(venta.getTipoDocumento())
-                .comprobanteNumero(venta.getComprobanteNumero())
                 .fechaVenta(venta.getFechaVenta())
                 .estado(venta.getEstado())
                 .build();
@@ -270,32 +234,28 @@ public class ReporteVentaService {
      * Obtener siguiente número de comprobante de forma segura (LOCK row).
      */
     private Long nextComprobanteNumber() {
-        entityManager.createNativeQuery("""
-                CREATE TABLE IF NOT EXISTS comprobante_sequence (
-                    id VARCHAR(50) PRIMARY KEY,
-                    `last_value` BIGINT NOT NULL
-                )
-                """).executeUpdate();
-
-        entityManager.createNativeQuery("""
-                INSERT IGNORE INTO comprobante_sequence (id, `last_value`)
-                VALUES ('comprobante', 0)
-                """).executeUpdate();
-
-        entityManager.createNativeQuery("""
-                UPDATE comprobante_sequence
-                SET `last_value` = LAST_INSERT_ID(`last_value` + 1)
-                WHERE id = 'comprobante'
-                """).executeUpdate();
-
-        Object res = entityManager.createNativeQuery("SELECT LAST_INSERT_ID()").getSingleResult();
-        if (res instanceof BigInteger) {
-            return ((BigInteger) res).longValue();
+        try {
+            Object res = entityManager.createNativeQuery("SELECT last_value FROM comprobante_sequence WHERE id = 'comprobante' FOR UPDATE").getSingleResult();
+            Long current = 0L;
+            if (res instanceof BigInteger) {
+                current = ((BigInteger) res).longValue();
+            } else if (res instanceof Number) {
+                current = ((Number) res).longValue();
+            }
+            Long next = current + 1;
+            entityManager.createNativeQuery("UPDATE comprobante_sequence SET last_value = ? WHERE id = 'comprobante'")
+                    .setParameter(1, next)
+                    .executeUpdate();
+            return next;
+        } catch (Exception ex) {
+            // Fallback: intentar insertar fila y retornar 1
+            try {
+                entityManager.createNativeQuery("INSERT INTO comprobante_sequence (id, last_value) VALUES ('comprobante', 1)").executeUpdate();
+                return 1L;
+            } catch (Exception ignored) {
+            }
+            return 1L;
         }
-        if (res instanceof Number) {
-            return ((Number) res).longValue();
-        }
-        return Long.valueOf(res.toString());
     }
 
     private void calcularTotales(ReporteVenta venta) {
